@@ -9,3 +9,5 @@ docker run -it --gpus all --rm -v $(realpath ~/git/picture-locate):/tf/notebooks
 ```
 docker run -it --gpus all --rm -v $(realpath ~/git/picture-locate):/tf/notebooks tensorflow/tensorflow:latest-gpu-py3 bash
 ```
+
+test
