@@ -58,8 +58,8 @@ def load_data(batch_size: int = 32) -> tf.data.Dataset:
     return dataset
 
 
-def visualize(anchor, positive, negative):
-    """Visualize a few triplets from the supplied batches."""
+def visualise(anchor, positive, negative):
+    """Visualise a few triplets from the supplied batches."""
 
     def show(ax, image):
         ax.imshow(image)
