@@ -1,4 +1,5 @@
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 
 def preprocess_image(image: tf.Tensor) -> tf.Tensor:
@@ -31,25 +32,44 @@ def load_data(batch_size: int = 32) -> tf.data.Dataset:
                                                                  label_mode=None,
                                                                  color_mode='rgb',
                                                                  image_size=(224, 224),
+                                                                 batch_size=batch_size,
                                                                  shuffle=False)
 
     positive_dataset = tf.keras.utils.image_dataset_from_directory(positive_images_path,
                                                                    label_mode=None,
                                                                    color_mode='rgb',
                                                                    image_size=(224, 224),
+                                                                   batch_size=batch_size,
                                                                    shuffle=False)
 
     negative_dataset = tf.keras.utils.image_dataset_from_directory(positive_images_path,
                                                                    label_mode=None,
                                                                    color_mode='rgb',
                                                                    image_size=(224, 224),
+                                                                   batch_size=batch_size,
                                                                    shuffle=True,
                                                                    seed=42)
 
     dataset = tf.data.Dataset.zip((anchor_dataset, positive_dataset, negative_dataset))
     # dataset = dataset.shuffle(buffer_size=516)
     dataset = dataset.map(preprocess_triplets)
-    # dataset = dataset.batch(batch_size=batch_size, drop_remainder=False)
     dataset = dataset.prefetch(8)
 
     return dataset
+
+
+def visualise(anchor, positive, negative):
+    """Visualise a few triplets from the supplied batches."""
+
+    def show(ax, image):
+        ax.imshow(image)
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+
+    fig = plt.figure(figsize=(9, 9))
+
+    axs = fig.subplots(3, 3)
+    for i in range(3):
+        show(axs[i, 0], anchor[i])
+        show(axs[i, 1], positive[i])
+        show(axs[i, 2], negative[i])

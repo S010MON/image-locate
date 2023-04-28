@@ -1,10 +1,9 @@
 import tensorflow as tf
-import matplotlib.pyplot as plt
 
-from keras import Model, callbacks
+from keras import Model
 from keras.applications.vgg16 import VGG16, preprocess_input
 from keras.layers import Flatten, Dense, Dropout, Layer, Input
-from keras import metrics, optimizers
+from keras import metrics
 
 
 def init_embedding_model(name: str) -> Model:
