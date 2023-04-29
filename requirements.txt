@@ -1,8 +1,9 @@
 Jupyter
-numpy>=1.23.5
-tensorflow>=2.12.0
-keras>=2.12.0
-Pillow>=9.3
+numpy==1.23.5
+tensorflow==2.12.0
+keras==2.12.0
+Pillow==9.3
 scikit-learn
 matplotlib
-opencv-python>=4.7.0.72
+opencv-python==4.7.0.72
+pandas==2.0.1
