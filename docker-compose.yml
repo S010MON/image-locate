@@ -1,0 +1,17 @@
+version: "3.1"
+
+services:
+  jupyter:
+    container_name: picture-locate
+    image: tensorflow/tensorflow:2.12.0-gpu-jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - "./:/tf/notebooks"
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
