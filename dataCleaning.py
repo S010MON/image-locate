@@ -52,7 +52,7 @@ def load_and_preprocess_img(path: str):
     ary = img_to_array(img)
     ary = np.expand_dims(ary, axis=0)
     ary = preprocess_input(ary)
-    return ary
+    return ary[0]
 
 
 def load_data(path: str, label: int):
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
     FILEPATH_POS = "data/terrestrial/"
-    FILEPATH_NEG = "data/out_neg/"
+    FILEPATH_NEG = "data/classification/0/"
 
     print("Loading data")
     X, y = load_data(FILEPATH_POS, 1)

@@ -21,6 +21,8 @@ def preprocess_triplets(anchor: tf.Tensor, positive: tf.Tensor, negative: tf.Ten
             preprocess_image(negative))
 
 
+
+
 def load_data(batch_size: int = 32) -> tf.data.Dataset:
     anchor_images_path = "/tf/notebooks/data/terrestrial/"
     positive_images_path = "/tf/notebooks/data/satellite/"
@@ -73,3 +75,5 @@ def visualise(anchor, positive, negative):
         show(axs[i, 0], anchor[i])
         show(axs[i, 1], positive[i])
         show(axs[i, 2], negative[i])
+
+
