@@ -1,12 +1,13 @@
 import tensorflow as tf
 
 from keras import Model
+from keras.applications import resnet
 from keras.applications.vgg16 import VGG16, preprocess_input
-from keras.layers import Flatten, Dense, Dropout, Layer, Input
+from keras.layers import Flatten, Dense, Dropout, Layer, Input, BatchNormalization
 from keras import metrics
 
 
-def init_embedding_model(name: str) -> Model:
+def vgg16_embedding(name: str) -> Model:
     vgg16 = VGG16(weights='imagenet',
                   include_top=False,
                   input_shape=(224, 224, 3))
@@ -31,6 +32,29 @@ def init_embedding_model(name: str) -> Model:
     return embedding_model
 
 
+def resnet_embedding(name: str, input_shape) -> Model:
+    base_cnn = resnet.ResNet50(
+        weights="imagenet", input_shape=input_shape + (3,), include_top=False
+    )
+
+    flatten = Flatten()(base_cnn.output)
+    dense1 = Dense(512, activation="relu")(flatten)
+    dense1 = BatchNormalization()(dense1)
+    dense2 = Dense(256, activation="relu")(dense1)
+    dense2 = BatchNormalization()(dense2)
+    output = Dense(256)(dense2)
+
+    embedding = Model(base_cnn.input, output, name="Embedding")
+
+    trainable = False
+    for layer in base_cnn.layers:
+        if layer.name == "conv5_block1_out":
+            trainable = True
+        layer.trainable = trainable
+
+    return embedding
+
+
 class DistanceLayer(Layer):
     """
     This layer is responsible for computing the distance between the anchor
@@ -48,59 +72,46 @@ class DistanceLayer(Layer):
         return ap_distance, an_distance
 
 
-def init_network_model(batch_size, input_shape=(224, 224, 3)) -> Model:
-    anchor_input = Input(name="anchor",
-                         batch_size=batch_size,
-                         shape=input_shape)
+def init_network(input_shape) -> Model:
 
-    positive_input = Input(name="positive",
-                           batch_size=batch_size,
-                           shape=input_shape)
+    anchor_input = Input(name="anchor",shape=input_shape + (3,))
+    positive_input = Input(name="positive", shape=input_shape + (3,))
+    negative_input = Input(name="negative", shape=input_shape + (3,))
 
-    negative_input = Input(name="negative",
-                           batch_size=batch_size,
-                           shape=input_shape)
-
-    sat_model = init_embedding_model("satellite")
-    ter_model = init_embedding_model("terrestrial")
+    embedding = resnet_embedding(name="Embedding",
+                                 input_shape=input_shape)
 
     distances = DistanceLayer()(
-        sat_model(preprocess_input(anchor_input)),
-        ter_model(preprocess_input(positive_input)),
-        ter_model(preprocess_input(negative_input)),
+        embedding(resnet.preprocess_input(anchor_input)),
+        embedding(resnet.preprocess_input(positive_input)),
+        embedding(resnet.preprocess_input(negative_input)),
     )
 
-    return Model(
-        inputs=[anchor_input, positive_input, negative_input],
-        outputs=distances
+    siamese_network = Model(
+        inputs=[anchor_input, positive_input, negative_input], outputs=distances
     )
 
+    return siamese_network
 
-class SiameseNetwork(Model):
+
+class SiameseModel(Model):
     """The Siamese Network model with a custom training and testing loops.
 
     Computes the triplet loss using the three embeddings produced by the
     Siamese Network.
 
-    Siamese Network.
     The triplet loss is defined as:
        L(A, P, N) = max(‖f(A) - f(P)‖² - ‖f(A) - f(N)‖² + margin, 0)
-
-    source: https://keras.io/examples/vision/siamese_network/
     """
 
-    def __init__(self, siamese_model=None, batch_size=32, margin=0.5):
+    def __init__(self, siamese_network, margin=0.5):
         super().__init__()
-        if siamese_model is None:
-            self.siamese_model = init_network_model(batch_size)
-        else:
-            self.siamese_model = siamese_model
+        self.siamese_network = siamese_network
         self.margin = margin
         self.loss_tracker = metrics.Mean(name="loss")
 
-
     def call(self, inputs):
-        return self.siamese_model(inputs)
+        return self.siamese_network(inputs)
 
     def train_step(self, data):
         # GradientTape is a context manager that records every operation that
@@ -112,11 +123,11 @@ class SiameseNetwork(Model):
 
         # Storing the gradients of the loss function with respect to the
         # weights/parameters.
-        gradients = tape.gradient(loss, self.siamese_model.trainable_weights)
+        gradients = tape.gradient(loss, self.siamese_network.trainable_weights)
 
         # Applying the gradients on the model using the specified optimizer
         self.optimizer.apply_gradients(
-            zip(gradients, self.siamese_model.trainable_weights)
+            zip(gradients, self.siamese_network.trainable_weights)
         )
 
         # Let's update and return the training loss metric.
@@ -134,7 +145,7 @@ class SiameseNetwork(Model):
         # The output of the network is a tuple containing the distances
         # between the anchor and the positive example, and the anchor and
         # the negative example.
-        ap_distance, an_distance = self.siamese_model(data)
+        ap_distance, an_distance = self.siamese_network(data)
 
         # Computing the Triplet Loss by subtracting both distances and
         # making sure we don't get a negative value.
@@ -147,7 +158,4 @@ class SiameseNetwork(Model):
         # We need to list our metrics here so the `reset_states()` can be
         # called automatically.
         return [self.loss_tracker]
-
-    def save(self, file_path: str):
-        self.siamese_model.save(file_path)
 

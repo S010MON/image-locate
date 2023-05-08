@@ -9,4 +9,5 @@ WORKDIR /tf/notebooks/
 
 # Copy and install requirements
 COPY requirements.txt .
+RUN python3 -m pip install --upgrade pip
 RUN pip3 install --no-cache-dir --upgrade -r ./requirements.txt

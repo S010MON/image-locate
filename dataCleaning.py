@@ -1,49 +1,49 @@
 import os
-from os import listdir
-
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 
-from keras.utils import load_img, img_to_array
-from keras.applications.vgg16 import VGG16, preprocess_input
+from keras import Model
 from keras.layers import Flatten, Dense, Dropout
-from keras import Model, callbacks
+from keras.applications.vgg16 import VGG16, preprocess_input
+from keras.utils import load_img, img_to_array, get_file, image_dataset_from_directory
 
-from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from cvusa import get_metadata
 
 
 def init_vgg16():
-    # Download the model with weights pre-trained using ImageNet database
-    vgg16 = VGG16(weights='imagenet',
+    vgg16 = VGG16(weights=None,
                   include_top=False,
                   input_shape=(224, 224, 3))
 
-    # Freeze layers for training
-    for layer in vgg16.layers:
-        layer.trainable = False
-
-    # Create a new 'top' of the model of fully-connected layers
+    # Create a new 'top' of the model of fully-connected layers for Places365
     top_model = vgg16.output
     top_model = Flatten(name="flatten")(top_model)
-    top_model = Dense(4096, activation='relu', name="top_dense_1")(top_model)
-    top_model = Dropout(0.2)(top_model)
-    top_model = Dense(512, activation='relu', name="top_dense_2")(top_model)
-    top_model = Dropout(0.2)(top_model)
-    top_model = Dense(256, activation='relu', name="top_dense_3")(top_model)
-    top_model = Dropout(0.2)(top_model)
-    top_model = Dense(128, activation='relu', name="top_dense_4")(top_model)
-    top_model = Dropout(0.2)(top_model)
-    output_layer = Dense(1, activation='softmax', name="output")(top_model)
+    top_model = Dense(4096, activation='relu', name="fc1")(top_model)
+    top_model = Dropout(0.5, name="drop_fc1")(top_model)
+    top_model = Dense(4096, activation='relu', name="fc2")(top_model)
+    top_model = Dropout(0.2, name="drop_fc2")(top_model)
+    output_layer = Dense(365, activation='softmax', name="predictions")(top_model)
 
-    # Group the convolutional base and new fully-connected layers into a Model object.
-    model = Model(inputs=vgg16.input, outputs=output_layer)
+    model = Model(inputs=vgg16.input,
+                  outputs=output_layer,
+                  name="vgg16-places365")
 
-    # Compiles the model for training.
-    model.compile(optimizer='adam',
-                  loss='binary_crossentropy',
-                  metrics=['accuracy'])
+    WEIGHTS_PATH = 'https://github.com/GKalliatakis/Keras-VGG16-places365/releases/download/v1.0/vgg16' \
+                   '-places365_weights_tf_dim_ordering_tf_kernels.h5'
+
+    weights_path = get_file('vgg16-places365_weights_tf_dim_ordering_tf_kernels.h5',
+                            WEIGHTS_PATH,
+                            cache_subdir='models')
+
+    model.load_weights(weights_path)
 
     return model
+
+
+def preprocess_labelled_image(image: tf.Tensor, label) -> tuple:
+    return tf.divide(image, 255), label
 
 
 def load_and_preprocess_img(path: str):
@@ -52,56 +52,79 @@ def load_and_preprocess_img(path: str):
     ary = img_to_array(img)
     ary = np.expand_dims(ary, axis=0)
     ary = preprocess_input(ary)
-    return ary[0]
+    return ary
 
 
-def load_data(path: str, label: int):
+def load_data(filepath: str) -> tf.data.Dataset:
+    dataset = image_dataset_from_directory(filepath,
+                                           color_mode='rgb',
+                                           image_size=(224, 224))
+    # dataset = dataset.map(preprocess_labelled_image)
+    return dataset
 
-    X = []
-    y = []
 
-    for filename in listdir(path):
-        x = load_and_preprocess_img(path + filename)
-        X.append(x)
-        y.append(label)
+def train_random_forest(x_path: str, y_path: str):
+    X = pd.read_csv(x_path)
+    y = pd.read_csv(y_path).squeeze()
+    assert len(X) == len(y)
 
-    return X, y
+    clf = RandomForestClassifier(n_estimators=300,
+                                 random_state=42,
+                                 n_jobs=-1)
+    clf.fit(X.values, y.values)
+    return clf
 
 
 if __name__ == "__main__":
-
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
-    FILEPATH_POS = "data/terrestrial/"
-    FILEPATH_NEG = "data/classification/0/"
-
-    print("Loading data")
-    X, y = load_data(FILEPATH_POS, 1)
-    X_neg, y_neg = load_data(FILEPATH_NEG, 0)
-
-    X.extend(X_neg)
-    y.extend(y_neg)
-
-    X = np.array(X)
-    y = np.array(y)
-
-    print("Split test and train")
-    X_train, X_test, y_train, y_test = train_test_split( X, y, test_size=0.2, random_state=42)
-
-    # Checkpoint during training
-    checkpoint_path = "classifier_chkpts/cp.ckpt"
-    checkpoint_dir = os.path.dirname(checkpoint_path)
-
-    # Create a callback that saves the model's weights
-    cp_callback = callbacks.ModelCheckpoint(filepath=checkpoint_path,
-                                            save_weights_only=True,
-                                            verbose=1)
-
-    print("Create model")
+    print("Loading Model")
     model = init_vgg16()
-    model.fit(X_train,
-              y_train,
-              batch_size=16,
-              epochs=10,
-              validation_data=(X_test, y_test),
-              callbacks=[cp_callback])
+
+    preds_file_path = "/tf/notebooks/classification_data.csv"
+    label_file_path = "/tf/notebooks/classification_labels.csv"
+
+    if not os.path.exists(preds_file_path) or not os.path.exists(label_file_path):
+        print("Loading Classifier Training Data")
+        data = load_data("/tf/notebooks/data/classification")
+
+        for images, labels in data:
+            preds = model.predict(images)
+            with open(preds_file_path, 'ab') as file:
+                np.savetxt(file, preds, delimiter=',')
+
+            with open(label_file_path, 'ab') as file:
+                int_labels = labels.numpy().astype("uint8")
+                np.savetxt(file, int_labels, delimiter=',', fmt='%i')
+
+    print("Create Random Forest")
+    clf = train_random_forest(preds_file_path, label_file_path)
+
+    with open('/tf/CVUSA/flickr_images.txt', 'r') as f:
+        flickr_data = [(x.strip(),) + get_metadata(x.strip()) for x in f]
+
+    # data in tuple form
+    # ('flickr/39/-100/37603091@N02_3832037528_39.353314_-100.441957.jpg', '39.353314', '-100.441957', '37603091@N02',
+    #   '3832037528', 'https://www.flickr.com/photos/37603091@N02/3832037528')
+
+    # Run through data and classify images
+    print(f"Data: {len(flickr_data)} files")
+    count = 0
+
+    for data in flickr_data:
+        count += 1
+
+        filepath = "/tf/CVUSA/" + data[0]
+        filename = filepath.split('/')[-1]
+        print(f"{data[0]} - {count}/{len(flickr_data)}: {round(100* (count/len(flickr_data)), 0)}%")
+
+        img = load_and_preprocess_img(filepath)
+        features = model.predict(img)
+        features = features[0].reshape(1, -1)
+        classification = clf.predict(features)
+
+        if classification:
+            with open("/tf/CVUSA/flickr_clean.txt", "a") as file:
+                file.write(f"{data[0]}\n")
+
+
