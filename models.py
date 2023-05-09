@@ -7,7 +7,7 @@ from keras.layers import Flatten, Dense, Dropout, Layer, Input, BatchNormalizati
 from keras import metrics
 
 
-def vgg16_embedding(name: str) -> Model:
+def vgg16_embedding() -> Model:
     vgg16 = VGG16(weights='imagenet',
                   include_top=False,
                   input_shape=(224, 224, 3))
@@ -27,14 +27,16 @@ def vgg16_embedding(name: str) -> Model:
 
     embedding_model = Model(inputs=vgg16.input,
                             outputs=output_layer,
-                            name=name)
+                            name='VGG16')
 
     return embedding_model
 
 
-def resnet_embedding(name: str, input_shape) -> Model:
+def resnet_embedding() -> Model:
     base_cnn = resnet.ResNet50(
-        weights="imagenet", input_shape=input_shape + (3,), include_top=False
+        weights="imagenet",
+        input_shape=(200, 200, 2),
+        include_top=False
     )
 
     flatten = Flatten()(base_cnn.output)
@@ -44,7 +46,7 @@ def resnet_embedding(name: str, input_shape) -> Model:
     dense2 = BatchNormalization()(dense2)
     output = Dense(256)(dense2)
 
-    embedding = Model(base_cnn.input, output, name="Embedding")
+    embedding = Model(base_cnn.input, output, name="ResNet50")
 
     trainable = False
     for layer in base_cnn.layers:
@@ -72,14 +74,21 @@ class DistanceLayer(Layer):
         return ap_distance, an_distance
 
 
-def init_network(input_shape) -> Model:
+def init_network(base_network: str = 'resnet') -> Model:
+    if base_network == 'resnet':
+        input_shape = (200, 200)
+        embedding = resnet_embedding()
 
-    anchor_input = Input(name="anchor",shape=input_shape + (3,))
+    elif base_network == 'vgg16':
+        input_shape = (224, 224)
+        embedding = vgg16_embedding()
+
+    else:
+        raise ValueError("Base network not selected.  Please choose from 'resnet' or 'vgg16' base networks")
+
+    anchor_input = Input(name="anchor", shape=input_shape + (3,))
     positive_input = Input(name="positive", shape=input_shape + (3,))
     negative_input = Input(name="negative", shape=input_shape + (3,))
-
-    embedding = resnet_embedding(name="Embedding",
-                                 input_shape=input_shape)
 
     distances = DistanceLayer()(
         embedding(resnet.preprocess_input(anchor_input)),
@@ -158,4 +167,3 @@ class SiameseModel(Model):
         # We need to list our metrics here so the `reset_states()` can be
         # called automatically.
         return [self.loss_tracker]
-
