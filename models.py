@@ -35,7 +35,7 @@ def vgg16_embedding() -> Model:
 def resnet_embedding() -> Model:
     base_cnn = resnet.ResNet50(
         weights="imagenet",
-        input_shape=(200, 200, 2),
+        input_shape=(200, 200, 3),
         include_top=False
     )
 

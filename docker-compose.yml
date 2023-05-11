@@ -9,7 +9,7 @@ services:
       - "8888:8888"
     volumes:
       - "./:/tf/notebooks"
-      - "/media/leon/SSD_8TB/CVUSA/:/tf/CVUSA/"
+      - "/media/leon/SSD_8TB1/CVUSA/:/tf/CVUSA/"
     deploy:
       resources:
         reservations:

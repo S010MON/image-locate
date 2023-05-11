@@ -3,8 +3,6 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 
-
-
 def preprocess_image(image: tf.Tensor) -> tf.Tensor:
     image = tf.divide(image, 255.0)
     return image
@@ -25,9 +23,10 @@ def preprocess_triplets(anchor: tf.Tensor, positive: tf.Tensor, negative: tf.Ten
             preprocess_image(negative))
 
 
-def load_data(batch_size: int = 16) -> tf.data.Dataset:
-    anchor_images_path = "/tf/CVUSA/terrestrial/"
-    positive_images_path = "/tf/CVUSA/satellite_polar/"
+def load_data(anchor_images_path: str="/tf/CVUSA/clean_ground/",
+              positive_images_path: str="/tf/CVUSA/clean_aerial/",
+              input_shape=(200, 200),
+              batch_size: int = 16) -> tf.data.Dataset:
 
     # TODO This will need to be improved using distance measures
 
@@ -35,21 +34,21 @@ def load_data(batch_size: int = 16) -> tf.data.Dataset:
     anchor_dataset = tf.keras.utils.image_dataset_from_directory(anchor_images_path,
                                                                  label_mode=None,
                                                                  color_mode='rgb',
-                                                                 image_size=(224, 224),
+                                                                 image_size=input_shape,
                                                                  batch_size=batch_size,
                                                                  shuffle=False)
 
     positive_dataset = tf.keras.utils.image_dataset_from_directory(positive_images_path,
                                                                    label_mode=None,
                                                                    color_mode='rgb',
-                                                                   image_size=(224, 224),
+                                                                   image_size=input_shape,
                                                                    batch_size=batch_size,
                                                                    shuffle=False)
 
     negative_dataset = tf.keras.utils.image_dataset_from_directory(positive_images_path,
                                                                    label_mode=None,
                                                                    color_mode='rgb',
-                                                                   image_size=(224, 224),
+                                                                   image_size=input_shape,
                                                                    batch_size=batch_size,
                                                                    shuffle=True,
                                                                    seed=42)
