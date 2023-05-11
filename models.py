@@ -74,7 +74,11 @@ class DistanceLayer(Layer):
         return ap_distance, an_distance
 
 
-def init_network(base_network: str = 'resnet') -> Model:
+def init_network(base_network: str = 'resnet', weights_path: str=None) -> Model:
+
+    if weights_path is not None:
+        return tf.saved_model.load(weights_path)
+
     if base_network == 'resnet':
         input_shape = (200, 200)
         embedding = resnet_embedding()
@@ -167,3 +171,6 @@ class SiameseModel(Model):
         # We need to list our metrics here so the `reset_states()` can be
         # called automatically.
         return [self.loss_tracker]
+
+    def get_config(self):
+        return {self.siamese_network.get_config()}
