@@ -2,9 +2,11 @@ import tensorflow as tf
 
 from keras import Model
 from keras.applications import resnet
-from keras.applications.vgg16 import VGG16, preprocess_input
+from keras.applications.vgg16 import VGG16
 from keras.layers import Flatten, Dense, Dropout, Layer, Input, BatchNormalization
 from keras import metrics
+
+from triplet_loss import _pairwise_distances
 
 
 def vgg16_embedding() -> Model:
@@ -74,8 +76,7 @@ class DistanceLayer(Layer):
         return ap_distance, an_distance
 
 
-def init_network(base_network: str = 'resnet', weights_path: str=None) -> Model:
-
+def init_network(base_network: str = 'resnet', weights_path: str = None) -> Model:
     if weights_path is not None:
         return tf.saved_model.load(weights_path)
 
@@ -117,9 +118,32 @@ class SiameseModel(Model):
        L(A, P, N) = max(‖f(A) - f(P)‖² - ‖f(A) - f(N)‖² + margin, 0)
     """
 
-    def __init__(self, siamese_network, margin=0.5):
+    def __init__(self, siamese_network, margin=0.5, base_network: str = 'resnet'):
         super().__init__()
-        self.siamese_network = siamese_network
+
+        if base_network == 'resnet':
+            input_shape = (200, 200)
+            self.embedding = resnet_embedding()
+
+        elif base_network == 'vgg16':
+            input_shape = (224, 224)
+            self.embedding = vgg16_embedding()
+        else:
+            raise ValueError("Base network not selected.  Please choose from 'resnet' or 'vgg16' base networks")
+
+        anchor_input = Input(name="anchor", shape=input_shape + (3,))
+        positive_input = Input(name="positive", shape=input_shape + (3,))
+        negative_input = Input(name="negative", shape=input_shape + (3,))
+
+        distances = DistanceLayer()(
+            self.embedding(resnet.preprocess_input(anchor_input)),
+            self.embedding(resnet.preprocess_input(positive_input)),
+            self.embedding(resnet.preprocess_input(negative_input)),
+        )
+
+        self.siamese_network = Model(
+            inputs=[anchor_input, positive_input, negative_input], outputs=distances
+        )
         self.margin = margin
         self.loss_tracker = metrics.Mean(name="loss")
 
