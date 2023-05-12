@@ -52,9 +52,10 @@ def load_data(anchor_images_path: str="/tf/CVUSA/clean_ground/",
                                                                    batch_size=batch_size,
                                                                    shuffle=True,
                                                                    seed=42)
+    negative_dataset = negative_dataset.shuffle(buffer_size=512, reshuffle_each_iteration=True)
 
     dataset = tf.data.Dataset.zip((anchor_dataset, positive_dataset, negative_dataset))
-    dataset = dataset.shuffle(buffer_size=32)
+    # dataset = dataset.shuffle(buffer_size=32)
     dataset = dataset.map(preprocess_triplets)
     dataset = dataset.prefetch(8)
 
