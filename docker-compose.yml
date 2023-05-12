@@ -4,7 +4,6 @@ services:
   jupyter:
     container_name: picture-locate
     build: .
-#    image: tensorflow/tensorflow:2.12.0-gpu-jupyter
     ports:
       - "8888:8888"
     volumes:
