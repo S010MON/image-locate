@@ -7,8 +7,6 @@ from keras.applications.vgg16 import VGG16
 from keras.layers import Flatten, Dense, Dropout, Layer, Input, BatchNormalization
 from keras import metrics
 
-from triplet_loss import _pairwise_distances
-
 
 def vgg16_embedding(name: str) -> Model:
     vgg16 = VGG16(weights='imagenet',
@@ -75,38 +73,6 @@ class DistanceLayer(Layer):
         ap_distance = tf.reduce_sum(tf.square(anchor - positive), -1)
         an_distance = tf.reduce_sum(tf.square(anchor - negative), -1)
         return ap_distance, an_distance
-
-
-# def init_network(base_network: str = 'resnet', weights_path: str = None) -> Model:
-#     if weights_path is not None:
-#         return tf.saved_model.load(weights_path)
-#
-#     if base_network == 'resnet':
-#         input_shape = (200, 200)
-#         embedding = resnet_embedding()
-#
-#     elif base_network == 'vgg16':
-#         input_shape = (224, 224)
-#         embedding = vgg16_embedding()
-#
-#     else:
-#         raise ValueError("Base network not selected.  Please choose from 'resnet' or 'vgg16' base networks")
-#
-#     anchor_input = Input(name="anchor", shape=input_shape + (3,))
-#     positive_input = Input(name="positive", shape=input_shape + (3,))
-#     negative_input = Input(name="negative", shape=input_shape + (3,))
-#
-#     distances = DistanceLayer()(
-#         embedding(resnet.preprocess_input(anchor_input)),
-#         embedding(resnet.preprocess_input(positive_input)),
-#         embedding(resnet.preprocess_input(negative_input)),
-#     )
-#
-#     siamese_network = Model(
-#         inputs=[anchor_input, positive_input, negative_input], outputs=distances
-#     )
-#
-#     return siamese_network
 
 
 class SiameseModel(Model):
