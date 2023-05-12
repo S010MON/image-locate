@@ -40,12 +40,12 @@ To build and run the project, find the `docker-compose.yml` file and run:
 docker-compose up --build
 ```
 This will build and start a container named `picture-locate` and will provide access to the jupyter server though a link.
-training can be run by entering the container and running the `trainModel.py` file as follows:
+Training can be run by entering the container and running the `trainModel.py` file as follows:
 
 ```bash
 docker exec -it picture-locate bash
 ```
-this will enter the container and provide a prompt at the `notebooks/` directory.dd
+This will enter the container and provide a prompt at the `notebooks/` directory.dd
 ```bash
 ________                               _______________
 ___  __/__________________________________  ____/__  /________      __
