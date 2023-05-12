@@ -56,7 +56,7 @@ for epoch in range(10):
             progress = int(100 * round((float(step) / float(total_steps)), 2)/2)
             print(f"\repoch:{epoch}  {step}/{train_data.__len__()} "
                   f"[{progress * '='}>{(50-progress)*' '}] "
-                  f"loss: {np.round(total_loss / float(step), decimals=2)}", end="")
+                  f"loss: {np.round(total_loss / float(step), decimals=2)}   ", end="")
 
     print(f"\nsaving weights to: {WEIGHTS_PATH}")
     model.siamese_network.save(WEIGHTS_PATH)
