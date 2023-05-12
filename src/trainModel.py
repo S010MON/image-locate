@@ -24,8 +24,8 @@ optimiser = optimizers.Adam(0.001)
 model.compile(optimizer=optimiser, weighted_metrics=[])
 
 for epoch in range(10):
-    print(f"\nEpoch: {epoch} {train_data.__len__()}")
 
+    total_steps = train_data.__len__()
     total_loss = -1
 
     for step, (a, p, n) in enumerate(train_data.as_numpy_iterator()):
@@ -42,6 +42,8 @@ for epoch in range(10):
             # Compute the loss
             loss = ap_distance - an_distance
             loss = tf.maximum(loss + model.margin, 0.0)
+
+            # Save the loss for updates/metrics
             if total_loss == -1:
                 total_loss = np.mean(loss)
             else:
@@ -50,7 +52,11 @@ for epoch in range(10):
         grads = tape.gradient(loss, model.siamese_network.trainable_weights)
         optimiser.apply_gradients(zip(grads, model.siamese_network.trainable_weights))
 
-        print(f"\rbatch: {step}/{train_data.__len__()} loss: {np.round(total_loss / step)}", end="")
+        if step > 0:
+            progress = int(100 * round((float(step) / float(total_steps)), 2)/2)
+            print(f"\repoch:{epoch}  {step}/{train_data.__len__()} "
+                  f"[{progress * '='}>{(50-progress)*' '}] "
+                  f"loss: {np.round(total_loss / float(step), decimals=2)}", end="")
 
     print(f"\nsaving weights to: {WEIGHTS_PATH}")
     model.siamese_network.save(WEIGHTS_PATH)
