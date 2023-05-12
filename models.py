@@ -118,7 +118,7 @@ class SiameseModel(Model):
        L(A, P, N) = max(‖f(A) - f(P)‖² - ‖f(A) - f(N)‖² + margin, 0)
     """
 
-    def __init__(self, siamese_network, margin=0.5, base_network: str = 'resnet'):
+    def __init__(self, margin=0.5, base_network: str = 'resnet'):
         super().__init__()
 
         if base_network == 'resnet':
@@ -179,6 +179,11 @@ class SiameseModel(Model):
         return {"loss": self.loss_tracker.result()}
 
     def _compute_loss(self, data):
+        anchor_embeddings = self.embedding(data[0])
+        positive_embeddings = self.embedding(data[1])
+        negative_embeddings = self.embedding(data[2])
+        # pairwise_dist = _pairwise_distances(embeddings)
+
         # The output of the network is a tuple containing the distances
         # between the anchor and the positive example, and the anchor and
         # the negative example.
