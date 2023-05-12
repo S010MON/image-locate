@@ -1,8 +1,8 @@
 import os
 import tensorflow as tf
-from keras import optimizers, callbacks
-from models import SiameseModel, init_network
-from utils import load_data, visualise
+from keras import optimizers
+from models import SiameseModel
+from utils import load_data
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 print("Tensorflow version:", tf.__version__)
@@ -17,9 +17,8 @@ train_data = load_data(anchor_images_path="/tf/CVUSA/clean_ground",
 
 WEIGHTS_PATH = "/tf/notebooks/resnet"
 
-network = init_network()
 # network.load_weights(WEIGHTS_PATH)
-model = SiameseModel(network)
+model = SiameseModel()
 model.compile(optimizer=optimizers.Adam(0.001), weighted_metrics=[])
 
 for epoch in range(1, 11):

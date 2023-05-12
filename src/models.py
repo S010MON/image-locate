@@ -9,7 +9,7 @@ from keras import metrics
 from triplet_loss import _pairwise_distances
 
 
-def vgg16_embedding() -> Model:
+def vgg16_embedding(name: str) -> Model:
     vgg16 = VGG16(weights='imagenet',
                   include_top=False,
                   input_shape=(224, 224, 3))
@@ -29,12 +29,12 @@ def vgg16_embedding() -> Model:
 
     embedding_model = Model(inputs=vgg16.input,
                             outputs=output_layer,
-                            name='VGG16')
+                            name=name)
 
     return embedding_model
 
 
-def resnet_embedding() -> Model:
+def resnet_embedding(name: str) -> Model:
     base_cnn = resnet.ResNet50(
         weights="imagenet",
         input_shape=(200, 200, 3),
@@ -48,7 +48,7 @@ def resnet_embedding() -> Model:
     dense2 = BatchNormalization()(dense2)
     output = Dense(256)(dense2)
 
-    embedding = Model(base_cnn.input, output, name="ResNet50")
+    embedding = Model(base_cnn.input, output, name=name)
 
     trainable = False
     for layer in base_cnn.layers:
@@ -76,36 +76,36 @@ class DistanceLayer(Layer):
         return ap_distance, an_distance
 
 
-def init_network(base_network: str = 'resnet', weights_path: str = None) -> Model:
-    if weights_path is not None:
-        return tf.saved_model.load(weights_path)
-
-    if base_network == 'resnet':
-        input_shape = (200, 200)
-        embedding = resnet_embedding()
-
-    elif base_network == 'vgg16':
-        input_shape = (224, 224)
-        embedding = vgg16_embedding()
-
-    else:
-        raise ValueError("Base network not selected.  Please choose from 'resnet' or 'vgg16' base networks")
-
-    anchor_input = Input(name="anchor", shape=input_shape + (3,))
-    positive_input = Input(name="positive", shape=input_shape + (3,))
-    negative_input = Input(name="negative", shape=input_shape + (3,))
-
-    distances = DistanceLayer()(
-        embedding(resnet.preprocess_input(anchor_input)),
-        embedding(resnet.preprocess_input(positive_input)),
-        embedding(resnet.preprocess_input(negative_input)),
-    )
-
-    siamese_network = Model(
-        inputs=[anchor_input, positive_input, negative_input], outputs=distances
-    )
-
-    return siamese_network
+# def init_network(base_network: str = 'resnet', weights_path: str = None) -> Model:
+#     if weights_path is not None:
+#         return tf.saved_model.load(weights_path)
+#
+#     if base_network == 'resnet':
+#         input_shape = (200, 200)
+#         embedding = resnet_embedding()
+#
+#     elif base_network == 'vgg16':
+#         input_shape = (224, 224)
+#         embedding = vgg16_embedding()
+#
+#     else:
+#         raise ValueError("Base network not selected.  Please choose from 'resnet' or 'vgg16' base networks")
+#
+#     anchor_input = Input(name="anchor", shape=input_shape + (3,))
+#     positive_input = Input(name="positive", shape=input_shape + (3,))
+#     negative_input = Input(name="negative", shape=input_shape + (3,))
+#
+#     distances = DistanceLayer()(
+#         embedding(resnet.preprocess_input(anchor_input)),
+#         embedding(resnet.preprocess_input(positive_input)),
+#         embedding(resnet.preprocess_input(negative_input)),
+#     )
+#
+#     siamese_network = Model(
+#         inputs=[anchor_input, positive_input, negative_input], outputs=distances
+#     )
+#
+#     return siamese_network
 
 
 class SiameseModel(Model):
@@ -123,11 +123,13 @@ class SiameseModel(Model):
 
         if base_network == 'resnet':
             input_shape = (200, 200)
-            self.embedding = resnet_embedding()
+            self.sat_embedding = resnet_embedding("Resnet50_Sat_Embedding")
+            self.gnd_embedding = resnet_embedding("Resnet50_Gnd_Embedding")
 
         elif base_network == 'vgg16':
             input_shape = (224, 224)
-            self.embedding = vgg16_embedding()
+            self.sat_embedding = vgg16_embedding("VGG16_Sat_Embedding")
+            self.gnd_embedding = vgg16_embedding("VGG16_Gnd_Embedding")
         else:
             raise ValueError("Base network not selected.  Please choose from 'resnet' or 'vgg16' base networks")
 
@@ -136,9 +138,9 @@ class SiameseModel(Model):
         negative_input = Input(name="negative", shape=input_shape + (3,))
 
         distances = DistanceLayer()(
-            self.embedding(resnet.preprocess_input(anchor_input)),
-            self.embedding(resnet.preprocess_input(positive_input)),
-            self.embedding(resnet.preprocess_input(negative_input)),
+            self.gnd_embedding(resnet.preprocess_input(anchor_input)),
+            self.sat_embedding(resnet.preprocess_input(positive_input)),
+            self.sat_embedding(resnet.preprocess_input(negative_input)),
         )
 
         self.siamese_network = Model(
@@ -179,9 +181,9 @@ class SiameseModel(Model):
         return {"loss": self.loss_tracker.result()}
 
     def _compute_loss(self, data):
-        anchor_embeddings = self.embedding(data[0])
-        positive_embeddings = self.embedding(data[1])
-        negative_embeddings = self.embedding(data[2])
+        anchor_embeddings = self.gnd_embedding(data[0])
+        positive_embeddings = self.sat_embedding(data[1])
+        negative_embeddings = self.sat_embedding(data[2])
         # pairwise_dist = _pairwise_distances(embeddings)
 
         # The output of the network is a tuple containing the distances
