@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 
 from keras import Model
@@ -152,11 +153,43 @@ class SiameseModel(Model):
     def call(self, inputs):
         return self.siamese_network(inputs)
 
+    def mine_hard_triplets(self, anchor: np.ndarray, positive: np.ndarray, negative: np.ndarray) -> tuple:
+        """
+        Online mine semi-hard triplets where d(a,p) < d(a,n) < d(a,p) + margin
+        :param anchor: a (batch_size, width, height, 3) tensor of Anchor images
+        :param positive: a (batch_size, width, height, 3) tensor of Positive images
+        :param negative: a (batch_size, width, height, 3) tensor of Negative images
+        :return: A reordered tuple of (A, P, N_hard) where A and P are unchanged and
+                N_hard are semi hard images
+        """
+        # Calculate embeddings for each of the images in the batch
+        anchor_embedding = self.gnd_embedding(anchor)
+        positive_embedding = self.sat_embedding(positive)
+        negative_embedding = self.sat_embedding(negative)
+
+        # Calculate the distance between the anchor and P/A embeddings
+        dp = anchor_embedding - positive_embedding
+        dn = anchor_embedding - negative_embedding
+
+        # Create a distance matrix between every element of the batch ||dp.T - dn||^2
+        # shape: (batch_size, batch_size)
+        distance = tf.matmul(dp, tf.transpose(dn))
+
+        # Create a mask to remove all the diagonal of the matrix (i.e. where i == j)
+        mask = tf.ones(tf.shape(distance)) - tf.eye(tf.shape(distance)[0])
+        distance = tf.multiply(distance, mask)
+
+        # Take the argmax of each row to find the hardest image to complete the triplet
+        indx = tf.argmax(distance, axis=1)
+        return tf.gather(negative, indx)
+
+
     def train_step(self, data):
         # GradientTape is a context manager that records every operation that
         # you do inside. We are using it here to compute the loss so we can get
         # the gradients and apply them using the optimizer specified in
         # `compile()`.
+
         with tf.GradientTape() as tape:
             loss = self._compute_loss(data)
 
@@ -181,9 +214,14 @@ class SiameseModel(Model):
         return {"loss": self.loss_tracker.result()}
 
     def _compute_loss(self, data):
+        print("data shape ", data)
         anchor_embeddings = self.gnd_embedding(data[0])
         positive_embeddings = self.sat_embedding(data[1])
         negative_embeddings = self.sat_embedding(data[2])
+
+        print(f"A:{anchor_embeddings}")
+        print(f"P:{positive_embeddings}")
+        print(f"N:{negative_embeddings}")
         # pairwise_dist = _pairwise_distances(embeddings)
 
         # The output of the network is a tuple containing the distances

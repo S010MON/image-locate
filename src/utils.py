@@ -28,8 +28,6 @@ def load_data(anchor_images_path: str="/tf/CVUSA/clean_ground/",
               input_shape=(200, 200),
               batch_size: int = 16) -> tf.data.Dataset:
 
-    # TODO This will need to be improved using distance measures
-
     # Create datasets
     anchor_dataset = tf.keras.utils.image_dataset_from_directory(anchor_images_path,
                                                                  label_mode=None,
@@ -52,13 +50,11 @@ def load_data(anchor_images_path: str="/tf/CVUSA/clean_ground/",
                                                                    batch_size=batch_size,
                                                                    shuffle=True,
                                                                    seed=42)
-    negative_dataset = negative_dataset.shuffle(buffer_size=16, reshuffle_each_iteration=True)
 
     dataset = tf.data.Dataset.zip((anchor_dataset, positive_dataset, negative_dataset))
-    # dataset = dataset.shuffle(buffer_size=32)
+    dataset = dataset.shuffle(buffer_size=64)
     dataset = dataset.map(preprocess_triplets)
-    dataset = dataset.prefetch(8)
-
+    dataset = dataset.prefetch(16)
     return dataset
 
 
