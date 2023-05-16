@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from keras import optimizers
 from models import SiameseModel
-from utils import load_data
+from utils import load_data, format_timedelta
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 print("Tensorflow version:", tf.__version__)
@@ -13,8 +13,8 @@ gpus = tf.config.experimental.list_physical_devices('GPU')
 print("Num GPUs Available: ", len(gpus))
 
 BATCH_SIZE = 16
-train_data = load_data(anchor_images_path="/tf/CVUSA/terrestrial",
-                       positive_images_path="/tf/CVUSA/satellite",
+train_data = load_data(anchor_images_path="/tf/CVUSA/clean_ground",
+                       positive_images_path="/tf/CVUSA/clean_aerial",
                        batch_size=BATCH_SIZE)
 
 
@@ -30,6 +30,7 @@ for epoch in range(10):
 
     total_steps = train_data.__len__()
     total_loss = -1
+    total_time = 0
     losses = []
 
     for step, (a, p, n) in enumerate(train_data.as_numpy_iterator()):
@@ -59,20 +60,25 @@ for epoch in range(10):
         optimiser.apply_gradients(zip(grads, model.siamese_network.trainable_weights))
 
         # Calculate the time per step
-        avg_time_step = np.multiply(np.subtract(time.time(), start_time), 1000)
+        total_time = np.multiply(np.subtract(time.time(), start_time), 1000)
 
         # Output progress update
         if step > 0:
-            progress = int(100 * round((float(step) / float(total_steps)), 2)/2)
+            step_f = float(step)
+            avg_time_step = total_time / step_f
+            progress = int(100 * round((step_f / float(total_steps)), 2)/2)
+            eta = timedelta(milliseconds=np.multiply(avg_time_step,(total_steps - step)))
             print(f"\repoch:{epoch}  {step}/{total_steps} "
                   f"[{progress * '='}>{(50-progress)*' '}] "
-                  f"loss: {np.round(total_loss / float(step), decimals=2)}   "
-                  f"{np.round(avg_time_step, decimals=0)}ms/step "
-                  f"ETA: {str(timedelta(milliseconds=np.multiply(avg_time_step, (total_steps - step))))} ", end="")
+                  f"loss: {np.round(total_loss / step_f, decimals=2)} \t"
+                  f"{np.int(avg_time_step)}ms/step \t"
+                  f"ETA: {format_timedelta(eta)} ", end="")
 
+    # Save weights and losses each epoch
     print(f"\nsaving weights to: {WEIGHTS_PATH}")
     model.siamese_network.save(WEIGHTS_PATH)
 
+    print(f"saving losses to: {LOSSES_PATH}")
     with open(LOSSES_PATH, "a") as file:
         file.writelines(losses)
         losses = []

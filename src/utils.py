@@ -2,6 +2,7 @@ import math
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from datetime import datetime, timedelta
 
 
 def preprocess_image(image: tf.Tensor) -> tf.Tensor:
@@ -150,3 +151,19 @@ def display(images, axis='off', cmap=None):
         fig.add_subplot(rows, cols, i+1)
         plt.imshow(images[i], cmap=cmap)
         plt.axis(axis)
+
+
+from datetime import datetime, timedelta
+
+
+def format_timedelta(td: timedelta):
+    """
+    Formats a timedelta object to display hours, minutes, and seconds.
+    :param td (timedelta): The timedelta object representing the elapsed time.
+    :returns str: The formatted string representation of the elapsed time in the format HH:MM:SS.
+    """
+    seconds = int(td.total_seconds())
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours}:{minutes:02}:{seconds:02}"
+
