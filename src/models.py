@@ -209,3 +209,6 @@ class SiameseModel(Model):
 
     def get_config(self):
         return {self.siamese_network.get_config()}
+
+    def load(self, filepath: str):
+        self.siamese_network.load_weights(filepath)

@@ -21,8 +21,8 @@ train_data = load_data(anchor_images_path="/tf/CVUSA/clean_ground",
 WEIGHTS_PATH = "/tf/notebooks/resnet"
 LOSSES_PATH = "/tf/notebooks/logs/" + str(datetime.now())
 
-# network.load_weights(WEIGHTS_PATH)
 model = SiameseModel()
+model.load(WEIGHTS_PATH)
 optimiser = optimizers.Adam(0.001)
 model.compile(optimizer=optimiser, weighted_metrics=[])
 
@@ -32,10 +32,10 @@ for epoch in range(10):
     total_loss = -1
     total_time = 0
     losses = []
+    start_time = time.time()
 
     for step, (a, p, n) in enumerate(train_data.as_numpy_iterator()):
 
-        start_time = time.time()
         if a.shape != p.shape != n.shape:
             continue
         # Mine hard triplets
@@ -60,18 +60,18 @@ for epoch in range(10):
         optimiser.apply_gradients(zip(grads, model.siamese_network.trainable_weights))
 
         # Calculate the time per step
-        total_time = np.multiply(np.subtract(time.time(), start_time), 1000)
+        total_time = np.subtract(time.time(), start_time)
 
         # Output progress update
         if step > 0:
             step_f = float(step)
             avg_time_step = total_time / step_f
             progress = int(100 * round((step_f / float(total_steps)), 2)/2)
-            eta = timedelta(milliseconds=np.multiply(avg_time_step,(total_steps - step)))
+            eta = timedelta(seconds=np.multiply(avg_time_step, (total_steps - step)))
             print(f"\repoch:{epoch}  {step}/{total_steps} "
                   f"[{progress * '='}>{(50-progress)*' '}] "
-                  f"loss: {np.round(total_loss / step_f, decimals=2)} \t"
-                  f"{np.int(avg_time_step)}ms/step \t"
+                  f"loss: {np.round(total_loss / step_f, decimals=2)}\t"
+                  f"{np.int(avg_time_step * 1000)}ms/step\t"
                   f"ETA: {format_timedelta(eta)} ", end="")
 
     # Save weights and losses each epoch
