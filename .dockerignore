@@ -4,5 +4,5 @@ docker-compose.yml
 .gitignore
 .ipynb_checkpoints/*
 .idea
-/src/__pycache__
+/src
 /resnet
