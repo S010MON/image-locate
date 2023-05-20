@@ -4,7 +4,7 @@ import tensorflow as tf
 from keras import Model
 from keras.applications import resnet
 from keras.applications.vgg16 import VGG16
-from keras.layers import Flatten, Dense, Dropout, Layer, Input, BatchNormalization
+from keras.layers import Flatten, Dense, Dropout, Layer, Input, BatchNormalization, Conv2D
 from keras import metrics
 
 
@@ -75,6 +75,64 @@ class DistanceLayer(Layer):
         return ap_distance, an_distance
 
 
+class NetVLAD(Layer):
+    def __init__(self, num_clusters=64,
+                 assign_weight_initializer=None,
+                 cluster_initializer=None,
+                 skip_postnorm=False,
+                 **kwargs):
+
+        super(NetVLAD, self).__init__(**kwargs)
+        self.num_clusters = num_clusters
+        self.assign_weight_initializer = assign_weight_initializer
+        self.cluster_initializer = cluster_initializer
+        self.skip_postnorm = skip_postnorm
+
+    def build(self, input_shape):
+        D = input_shape[-1]
+        self.assignment = Conv2D(self.num_clusters,
+                                 1,
+                                 use_bias=False,
+                                 kernel_initializer=self.assign_weight_initializer,
+                                 name='assignment')
+
+        self.cluster_centers = self.add_weight(name='cluster_centers',
+                                               shape=(1, 1, 1, D, self.num_clusters),
+                                               initializer=self.cluster_initializer,
+                                               trainable=True)
+        super(NetVLAD, self).build(input_shape)
+
+    def call(self, inputs):
+        s = self.assignment(inputs)
+        a = tf.nn.softmax(s)
+        a = tf.expand_dims(a, -2)
+
+        v = tf.expand_dims(inputs, -1) + self.cluster_centers
+        v = a * v
+        v = tf.reduce_sum(v, axis=[1, 2])
+        v = tf.transpose(v, perm=[0, 2, 1])
+
+        if not self.skip_postnorm:
+            v = v / tf.sqrt(tf.reduce_sum(v ** 2, axis=-1, keepdims=True) + 1e-12)
+            v = tf.transpose(v, perm=[0, 2, 1])
+            v = v / tf.sqrt(tf.reduce_sum(v ** 2, axis=-1, keepdims=True) + 1e-12)
+
+        return v
+
+    def get_config(self):
+        config = super(NetVLAD, self).get_config()
+        config.update({
+            'num_clusters': self.num_clusters,
+            'assign_weight_initializer': self.assign_weight_initializer,
+            'cluster_initializer': self.cluster_initializer,
+            'skip_postnorm': self.skip_postnorm,
+        })
+        return config
+
+
+
+
+
 class SiameseModel(Model):
     """The Siamese Network model with a custom training and testing loops.
 
@@ -85,7 +143,7 @@ class SiameseModel(Model):
        L(A, P, N) = max(‖f(A) - f(P)‖² - ‖f(A) - f(N)‖² + margin, 0)
     """
 
-    def __init__(self, margin=0.5, base_network: str = 'resnet'):
+    def __init__(self, margin=0.5, base_network: str = 'resnet', netvlad=False):
         super().__init__()
 
         if base_network == 'resnet':
@@ -148,7 +206,6 @@ class SiameseModel(Model):
         # Take the argmax of each row to find the hardest image to complete the triplet
         indx = tf.argmax(distance, axis=1)
         return tf.gather(negative, indx)
-
 
     def train_step(self, data):
         # GradientTape is a context manager that records every operation that
