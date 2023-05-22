@@ -23,7 +23,7 @@ def print_progress(epoch, step, total_steps, total_time, total_loss):
     print(f"\repoch:{epoch}  {step}/{total_steps} "
           f"[{progress * '='}>{(50 - progress) * ' '}] "
           f"loss: {np.round(total_loss / step_f, decimals=2)}\t"
-          f"{np.int(avg_time_step * 1000)}ms/step\t"
+          f"{int(avg_time_step * 1000)}ms/step\t"
           f"ETA: {format_timedelta(eta)} ", end="")
 
 
@@ -33,11 +33,11 @@ def train():
                            positive_images_path="/tf/CVUSA/clean_aerial",
                            batch_size=BATCH_SIZE)
 
-    WEIGHTS_PATH = "/tf/notebooks/resnet"
+    WEIGHTS_PATH = "/tf/notebooks/cvm-net"
     LOSSES_PATH = "/tf/notebooks/logs/" + str(datetime.now())
 
     model = SiameseModel()
-    model.load(WEIGHTS_PATH)
+    # model.load(WEIGHTS_PATH)
     optimiser = optimizers.Adam(0.001)
     model.compile(optimizer=optimiser, weighted_metrics=[])
 

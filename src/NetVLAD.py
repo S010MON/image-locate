@@ -1,5 +1,7 @@
 import tensorflow as tf
 from keras.layers import Flatten, Layer, Conv2D
+from tensorflow.python.keras.engine.keras_tensor import KerasTensor
+
 
 class NetVLAD(Layer):
     """
@@ -9,13 +11,19 @@ class NetVLAD(Layer):
         Implementation: https://github.com/NHGJem/tensorflow2-NetVLAD/blob/master/netvlad_layer.py
     """
 
-    def __init__(self, K=64, assign_weight_initializer=None,
-                 cluster_initializer=None, skip_postnorm=False, outdim=32768, **kwargs):
+    def __init__(self,
+                 input_shape,
+                 K=64,
+                 assign_weight_initializer=None,
+                 cluster_initializer=None,
+                 skip_postnorm=False,
+                 outdim=32768,
+                 **kwargs):
         self.K = K
         self.assign_weight_initializer = assign_weight_initializer
         self.skip_postnorm = skip_postnorm
         self.outdim = outdim
-        super(NetVLAD, self).__init__(**kwargs)
+        super(NetVLAD, self).__init__(input_shape=input_shape, **kwargs)
 
     def build(self, input_shape):
         self.D = input_shape[-1]
@@ -29,10 +37,12 @@ class NetVLAD(Layer):
                            use_bias=True, padding='valid',
                            kernel_initializer='zeros')
         self.conv.build(input_shape)
-
+        self.built = True
         super(NetVLAD, self).build(input_shape)
 
-    def call(self, inputs):
+    def call(self, inputs: KerasTensor):
+        if not self.built:
+            self.build(input_shape=inputs.shape)
         s = self.conv(inputs)
         a = tf.nn.softmax(s)
 
