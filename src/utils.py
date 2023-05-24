@@ -153,9 +153,6 @@ def display(images, axis='off', cmap=None):
         plt.axis(axis)
 
 
-from datetime import datetime, timedelta
-
-
 def format_timedelta(td: timedelta):
     """
     Formats a timedelta object to display hours, minutes, and seconds.
