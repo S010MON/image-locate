@@ -113,7 +113,7 @@ class SiameseModel(Model):
        L(A, P, N) = max(‖f(A) - f(P)‖² - ‖f(A) - f(N)‖² + margin, 0)
     """
 
-    def __init__(self, margin=0.5, base_network: str = 'resnet', netvlad=False):
+    def __init__(self, base_network: str = 'resnet', netvlad=False):
         super().__init__()
 
         if base_network == 'resnet':
@@ -141,7 +141,6 @@ class SiameseModel(Model):
         self.siamese_network = Model(
             inputs=[anchor_input, positive_input, negative_input], outputs=distances
         )
-        self.margin = margin
         self.loss_tracker = metrics.Mean(name="loss")
 
     def call(self, inputs):

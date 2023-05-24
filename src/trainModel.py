@@ -14,6 +14,7 @@ print("Num GPUs Available: ", len(gpus))
 
 # --- Set global variables --- #
 BATCH_SIZE = 16
+MARGIN = 0.5
 EPOCHS = 10
 WEIGHTS_PATH = "/tf/notebooks/cvm-net"
 LOSSES_PATH = "/tf/notebooks/logs/" + str(datetime.now().strftime("%Y-%m-%d_%H:%M:%S"))
@@ -65,7 +66,7 @@ def train(load_from_file: bool = False):
 
                 # Compute the loss
                 loss = ap_distance - an_distance
-                loss = tf.maximum(loss + model.margin, 0.0)
+                loss = tf.maximum(loss + MARGIN, 0.0)
 
                 # Save the loss for updates/metrics
                 losses.append(str(np.mean(loss)))
