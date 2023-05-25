@@ -59,6 +59,8 @@ def test(model=None, data=None):
           f"top  5%: {results[4]}\n"
           f"top 10%: {results[5]}\n")
 
+    with open("/tf/notebooks/logs/validation", 'a') as file:
+        file.write(f"{results[0]},{results[1]},{results[2]},{results[3]},{results[4]},{results[5]}\n")
 
 if __name__ == "__main__":
     test()
