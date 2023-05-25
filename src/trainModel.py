@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from keras import optimizers
 from models import SiameseModel
-from utils import load_data, format_timedelta
+from utils import load_data, format_timedelta, distance_matrix
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 print("Tensorflow version:", tf.__version__)
@@ -54,14 +54,14 @@ def train(load_from_file: bool = False):
         losses = []
         start_time = time.time()
 
-        for step, (a, p, n) in enumerate(train_data.as_numpy_iterator()):
+        for step, (gnd, sat_p, sat_n) in enumerate(train_data.as_numpy_iterator()):
 
-            # Mine hard triplets
-            n = model.mine_hard_triplets(a, p, n)
+            # Mine hard triplets, rearranges the negatives to be hard
+            sat_n = model.mine_hard_triplets(gnd, sat_p, sat_n)
 
             with tf.GradientTape() as tape:
                 # Forward pass on the Hard Triplets
-                ap_distance, an_distance = model.siamese_network((a, p, n))
+                ap_distance, an_distance = model.siamese_network((gnd, sat_p, sat_n))
 
                 # Compute the loss
                 loss = ap_distance - an_distance
@@ -93,25 +93,6 @@ def train(load_from_file: bool = False):
             for loss in losses:
                 file.write(loss + ",\n")
             losses = []
-
-
-def test():
-    test_data = load_data(anchor_images_path="/tf/CVUSA/terrestrial",
-                          positive_images_path="/tf/CVUSA/satellite",
-                          batch_size=BATCH_SIZE)
-
-    model = SiameseModel()
-    model.load(WEIGHTS_PATH)
-    optimiser = optimizers.Adam(0.001)
-    model.compile(optimizer=optimiser, weighted_metrics=[])
-
-    total_steps = test_data.__len__()
-    total_loss = -1
-    losses = []
-    start_time = time.time()
-
-    for step, (a, p, n) in enumerate(test_data.as_numpy_iterator()):
-        pass
 
 
 if __name__ == "__main__":
