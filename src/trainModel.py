@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from keras import optimizers
 from models import SiameseModel
-from utils import load_data, format_timedelta, distance_matrix
+from utils import load_data, format_timedelta
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 print("Tensorflow version:", tf.__version__)

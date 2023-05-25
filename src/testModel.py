@@ -1,9 +1,12 @@
+import time
+
 import numpy as np
+import scipy
 from keras import optimizers
 from tqdm import tqdm
 
 from models import SiameseModel
-from utils import load_data, distance_matrix, recall_at_k
+from utils import load_data, distance_matrix, distance_matrix_loop
 
 # --- Set global variables --- #
 BATCH_SIZE = 16
@@ -31,7 +34,12 @@ def test(model=None):
     global_sat_descriptors = []             # [ [e_1, e_2, ... e_n], [e_1, e_2 ... e_n] ]
     global_gnd_descriptors = []             # where e = embedding vector and n = batch_size
 
-    for gnd, sat_p, sat_n in tqdm(test_data.as_numpy_iterator()):
+    total_steps = test_data.__len__()
+
+    for step, (gnd, sat_p, sat_n) in enumerate(test_data.as_numpy_iterator()):
+        progress = int(100 * round((float(step)/ float(total_steps)), 2) / 2)
+        print(f"\rEncoding: [{progress * '='}>{(50-progress) * ' '}]", end='')
+
         global_gnd_descriptors.append(gnd_embedding.predict(gnd, verbose=0))
         global_sat_descriptors.append(sat_embedding.predict(sat_p, verbose=0))
 
@@ -39,11 +47,7 @@ def test(model=None):
     global_gnd_descriptors = np.concatenate(global_gnd_descriptors)
     global_sat_descriptors = np.concatenate(global_sat_descriptors)
 
-    global_distances = distance_matrix(global_gnd_descriptors, global_sat_descriptors)
-
-    results = recall_at_k(global_distances)
-    print(results)
-
+    global_distances = np.square(scipy.spatial.distance.cdist(global_gnd_descriptors, global_sat_descriptors))
 
 
 if __name__ == "__main__":

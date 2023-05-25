@@ -170,18 +170,6 @@ def format_timedelta(td: timedelta):
     return f"{hours}:{minutes:02}:{seconds:02}"
 
 
-def distance_matrix(x_1: np.ndarray, x_2: np.ndarray) -> np.ndarray:
-    """
-    Source: https://samuelalbanie.com/files/Euclidean_distance_trick.pdf
-    :param x_1: a matrix of embeddings (batch_size, dimensions)
-    :param x_2: a matrix of embeddings (batch_size, dimensions)
-    :return: a matrix of l2 distances (batch_size, batch_size)
-    """
-    G = np.matmul(x_1, x_2.transpose())
-    D = np.diagonal(G) + np.diagonal(G.transpose()) - 2 * G
-    return D
-
-
 def recall_at_k(distances: np.ndarray) -> tuple:
     """
     Calculate the recall @k for top 1, 5, 10 and 1%, 5%, 10%
@@ -190,6 +178,7 @@ def recall_at_k(distances: np.ndarray) -> tuple:
     """
     count = distances.shape[0]
     correct_dists = distances.diagonal()
+    print("\nCorrect:", correct_dists)
     sorted_dists = np.sort(distances, axis=0)
 
     top_one = np.sum(correct_dists >= sorted_dists[:, -1]) / count * 100
@@ -197,12 +186,18 @@ def recall_at_k(distances: np.ndarray) -> tuple:
     top_ten = np.sum(correct_dists >= sorted_dists[:, -10]) / count * 100
 
     one_percent_idx = int(count * 0.01)
+    print(one_percent_idx)
+    print(sorted_dists[0])
+    print(correct_dists[0])
+    print(correct_dists >= sorted_dists[:, -one_percent_idx])
     top_one_percent = np.sum(correct_dists >= sorted_dists[:, -one_percent_idx]) / count * 100
 
     five_percent_idx = int(count * 0.05)
+    print(five_percent_idx)
     top_five_percent = np.sum(correct_dists >= sorted_dists[:, -five_percent_idx]) / count * 100
 
-    ten_percent_idx = int(count * 0.1)
+    ten_percent_idx = int(count * 0.5)
+    print(ten_percent_idx)
     top_ten_percent = np.sum(correct_dists >= sorted_dists[:, -ten_percent_idx]) / count * 100
 
     return top_one, top_five, top_ten, top_one_percent, top_five_percent, top_ten_percent
