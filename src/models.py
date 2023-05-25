@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.spatial.distance
 import tensorflow as tf
 
 from keras import Model, Sequential
@@ -167,7 +168,7 @@ class SiameseModel(Model):
 
         # Create a distance matrix between every element of the batch ||dp.T - dn||^2
         # shape: (batch_size, batch_size)
-        distance = tf.matmul(dp, tf.transpose(dn))
+        distance = np.square(scipy.spatial.distance.cdist(dp, dn))
 
         # Create a mask to remove all the diagonal of the matrix (i.e. where i == j)
         mask = tf.ones(tf.shape(distance)) - tf.eye(tf.shape(distance)[0])
