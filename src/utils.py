@@ -178,26 +178,24 @@ def recall_at_k(distances: np.ndarray) -> tuple:
     """
     count = distances.shape[0]
     correct_dists = distances.diagonal()
-    print("\nCorrect:", correct_dists)
-    sorted_dists = np.sort(distances, axis=0)
+    # mask = np.subtract(np.ones(count), np.eye(count))
+    sorted_dists = np.sort(distances, axis=1)
 
-    top_one = np.sum(correct_dists >= sorted_dists[:, -1]) / count * 100
-    top_five = np.sum(correct_dists >= sorted_dists[:, -5]) / count * 100
-    top_ten = np.sum(correct_dists >= sorted_dists[:, -10]) / count * 100
+    top_one  = np.sum(correct_dists <= sorted_dists[:, 0]) / count * 100
+    top_five = np.sum(correct_dists <= sorted_dists[:, 0]) / count * 100
+    top_ten  = np.sum(correct_dists <= sorted_dists[:, 0]) / count * 100
 
-    one_percent_idx = int(count * 0.01)
-    print(one_percent_idx)
-    print(sorted_dists[0])
-    print(correct_dists[0])
-    print(correct_dists >= sorted_dists[:, -one_percent_idx])
-    top_one_percent = np.sum(correct_dists >= sorted_dists[:, -one_percent_idx]) / count * 100
+    one_percent_idx = int(float(count) * 0.01)
+    top_one_percent = np.sum(correct_dists <= sorted_dists[:, one_percent_idx]) / count * 100
 
-    five_percent_idx = int(count * 0.05)
-    print(five_percent_idx)
-    top_five_percent = np.sum(correct_dists >= sorted_dists[:, -five_percent_idx]) / count * 100
+    five_percent_idx = int(float(count) * 0.05)
+    top_five_percent = (np.sum(correct_dists <= sorted_dists[:, five_percent_idx])) / count * 100
 
-    ten_percent_idx = int(count * 0.5)
-    print(ten_percent_idx)
-    top_ten_percent = np.sum(correct_dists >= sorted_dists[:, -ten_percent_idx]) / count * 100
+    ten_percent_idx = int(float(count) * 0.1)
+    top_ten_percent = (np.sum(correct_dists <= sorted_dists[:, ten_percent_idx])) / count * 100
+
+    print("1% idx ", one_percent_idx, "| 5% idx ", five_percent_idx, "| 10% idx ", ten_percent_idx)
+    print(f"top: 1={sorted_dists[0, 0]}, 5={sorted_dists[0, 4]} 10={sorted_dists[0, 9]}\n"
+          f"top: 1%={sorted_dists[0, one_percent_idx]}, 5%={sorted_dists[0, five_percent_idx]} 10%={sorted_dists[0, ten_percent_idx]}")
 
     return top_one, top_five, top_ten, top_one_percent, top_five_percent, top_ten_percent

@@ -6,6 +6,7 @@ import tensorflow as tf
 from keras import optimizers
 from models import SiameseModel
 from utils import load_data, format_timedelta
+from testModel import test
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 print("Tensorflow version:", tf.__version__)
@@ -29,9 +30,9 @@ def print_progress(epoch, step, total_steps, total_time, total_loss):
     eta = timedelta(seconds=np.multiply(avg_time_step, (total_steps - step)))
     print(f"\repoch:{epoch}  {step}/{total_steps} "
           f"[{progress * '='}>{(50 - progress) * ' '}] "
-          f"loss: {np.round(total_loss / step_f, decimals=2)}\t"
-          f"{int(avg_time_step * 1000)}ms/step\t"
-          f"ETA: {format_timedelta(eta)} ", end="")
+          f"loss: {np.round(total_loss / step_f, decimals=2)}    "
+          f"{int(avg_time_step * 1000)}ms/step    "
+          f"ETA: {format_timedelta(eta)}      ", end="")
 
 
 def train(load_from_file: bool = False):
@@ -93,6 +94,8 @@ def train(load_from_file: bool = False):
             for loss in losses:
                 file.write(loss + ",\n")
             losses = []
+
+        test(model=model, data=train_data)
 
 
 if __name__ == "__main__":
