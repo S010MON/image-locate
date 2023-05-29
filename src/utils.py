@@ -1,39 +1,41 @@
 import math
-from typing import Tuple, Any
-
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
-from numpy import ndarray
-from tqdm import tqdm
 
-
-def preprocess_image(image: tf.Tensor) -> tf.Tensor:
+def preprocess_image(image: tf.Tensor, random_crop: bool = True) -> tf.Tensor:
     image = tf.divide(image, 255.0)
+
+    if random_crop:
+        crop_height = int(image.shape[0] * 0.8)
+        crop_width = int(image.shape[1] * 0.8)
+        image = tf.image.random_crop(image, size=(crop_height, crop_width, 3))
     return image
 
 
-def preprocess_triplets(anchor: tf.Tensor, positive: tf.Tensor, negative: tf.Tensor) -> tuple:
+def preprocess_triplets(anchor: tf.Tensor, positive: tf.Tensor, negative: tf.Tensor, random_crop: bool = True) -> tuple:
     """
     Given three filepaths, load and preprocess each and return the tuple of
     all three.
+    :param random_crop:
     :param anchor: the anchor image path
     :param positive: the positive image path
     :param negative: the negative image path
     :return: tuple of three preprocessed images
     """
 
-    return (preprocess_image(anchor),
-            preprocess_image(positive),
-            preprocess_image(negative))
+    return (preprocess_image(anchor, random_crop=False),
+            preprocess_image(positive, random_crop=random_crop),
+            preprocess_image(negative, random_crop=random_crop))
 
 
 def load_data(anchor_images_path: str = "/tf/CVUSA/clean_ground/",
               positive_images_path: str = "/tf/CVUSA/clean_aerial/",
               input_shape=(200, 200),
-              batch_size: int = 16) -> tf.data.Dataset:
+              batch_size: int = 16,
+              random_crop: bool = True) -> tf.data.Dataset:
     # Create datasets
     anchor_dataset = tf.keras.utils.image_dataset_from_directory(anchor_images_path,
                                                                  label_mode=None,
