@@ -5,30 +5,52 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
 
-def preprocess_image(image: tf.Tensor, random_crop: bool = True) -> tf.Tensor:
+def preprocess_image_vgg16(image: tf.Tensor, random_crop: bool = True) -> tf.Tensor:
     image = tf.divide(image, 255.0)
 
     if random_crop:
-        crop_height = int(image.shape[0] * 0.8)
-        crop_width = int(image.shape[1] * 0.8)
-        image = tf.image.random_crop(image, size=(crop_height, crop_width, 3))
+        image = tf.image.random_crop(image, size=(224, 224, 3))
     return image
 
 
-def preprocess_triplets(anchor: tf.Tensor, positive: tf.Tensor, negative: tf.Tensor, random_crop: bool = True) -> tuple:
+def preprocess_triplets_vgg16(anchor: tf.Tensor, positive: tf.Tensor, negative: tf.Tensor, random_crop: bool = True) -> tuple:
     """
     Given three filepaths, load and preprocess each and return the tuple of
     all three.
-    :param random_crop:
     :param anchor: the anchor image path
     :param positive: the positive image path
     :param negative: the negative image path
+    :param random_crop: if the image needs to be randomly cropped
     :return: tuple of three preprocessed images
     """
 
-    return (preprocess_image(anchor, random_crop=False),
-            preprocess_image(positive, random_crop=random_crop),
-            preprocess_image(negative, random_crop=random_crop))
+    return (preprocess_image_vgg16(anchor, random_crop=False),
+            preprocess_image_vgg16(positive, random_crop=random_crop),
+            preprocess_image_vgg16(negative, random_crop=random_crop))
+
+
+def preprocess_image_resnet(image: tf.Tensor, random_crop: bool = True) -> tf.Tensor:
+    image = tf.divide(image, 255.0)
+
+    if random_crop:
+        image = tf.image.random_crop(image, size=(200, 200, 3))
+    return image
+
+
+def preprocess_triplets_resnet(anchor: tf.Tensor, positive: tf.Tensor, negative: tf.Tensor, random_crop: bool = True) -> tuple:
+    """
+    Given three filepaths, load and preprocess each and return the tuple of
+    all three.
+    :param anchor: the anchor image path
+    :param positive: the positive image path
+    :param negative: the negative image path
+    :param random_crop: if the image needs to be randomly cropped
+    :return: tuple of three preprocessed images
+    """
+
+    return (preprocess_image_resnet(anchor, random_crop=False),
+            preprocess_image_resnet(positive, random_crop=random_crop),
+            preprocess_image_resnet(negative, random_crop=random_crop))
 
 
 def load_data(anchor_images_path: str = "/tf/CVUSA/clean_ground/",
@@ -44,24 +66,33 @@ def load_data(anchor_images_path: str = "/tf/CVUSA/clean_ground/",
                                                                  batch_size=batch_size,
                                                                  shuffle=False)
 
+    pre_crop_shape = input_shape
+    if random_crop:
+        pre_crop_shape = (300, 300)
+
     positive_dataset = tf.keras.utils.image_dataset_from_directory(positive_images_path,
                                                                    label_mode=None,
                                                                    color_mode='rgb',
-                                                                   image_size=input_shape,
+                                                                   image_size=pre_crop_shape,
                                                                    batch_size=batch_size,
                                                                    shuffle=False)
 
     negative_dataset = tf.keras.utils.image_dataset_from_directory(positive_images_path,
                                                                    label_mode=None,
                                                                    color_mode='rgb',
-                                                                   image_size=input_shape,
+                                                                   image_size=pre_crop_shape,
                                                                    batch_size=batch_size,
                                                                    shuffle=True,
                                                                    seed=42)
 
     dataset = tf.data.Dataset.zip((anchor_dataset, positive_dataset, negative_dataset))
     dataset = dataset.shuffle(buffer_size=64)
-    dataset = dataset.map(preprocess_triplets)
+
+    if input_shape == (224, 224):
+        dataset = dataset.map(preprocess_triplets_vgg16)
+    elif input_shape == (200, 200):
+        dataset = dataset.map(preprocess_image_resnet)
+
     dataset = dataset.prefetch(16)
     return dataset
 
