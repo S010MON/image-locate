@@ -28,10 +28,6 @@ def recall_at_k(distances: np.ndarray, testing=False) -> tuple:
     ten_percent_idx = int(float(count) * 0.1)
     top_ten_percent = (np.sum(correct_dists <= sorted_dists[:, ten_percent_idx])) / count * 100
 
-    print("1% idx ", one_percent_idx, "| 5% idx ", five_percent_idx, "| 10% idx ", ten_percent_idx)
-    print(f"top: 1={sorted_dists[0, 1]}, 5={sorted_dists[0, 5]} 10={sorted_dists[0, 10]}\n"
-          f"top: 1%={sorted_dists[0, one_percent_idx]}, 5%={sorted_dists[0, five_percent_idx]} 10%={sorted_dists[0, ten_percent_idx]}")
-
     if testing:
         return top_1, top_5, top_10, top_one_percent, top_five_percent, top_ten_percent
 

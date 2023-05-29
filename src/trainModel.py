@@ -140,7 +140,7 @@ def train(load_from_file: bool = False):
             # Output progress update
             print_progress(epoch, step, total_steps, total_time, total_loss)
 
-        print(f"completed epoch {epoch} in {format_timedelta(timedelta(seconds=(time.time() - start_time)))}")
+        print(f"completed epoch in {format_timedelta(timedelta(seconds=(time.time() - start_time)))}")
 
         # Save weights and losses each epoch
         save_weights(model)

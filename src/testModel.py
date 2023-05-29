@@ -1,12 +1,10 @@
-import time
-
 import numpy as np
 import scipy
 from keras import optimizers
 
 from models import SiameseModel
 from dataset import Dataset
-from metrics import recall_at_k
+from metrics import recall_at_k, proportional_search_space_reduction
 
 # --- Set global variables --- #
 BATCH_SIZE = 16
@@ -34,7 +32,8 @@ def test(model: SiameseModel = None, model_name="unnamed_model", data=None, base
         dataset = Dataset(sat_images_path="/tf/CVUSA/terrestrial",
                           gnd_images_path="/tf/CVUSA/satellite",
                           base_network=base_model,
-                          batch_size=BATCH_SIZE)
+                          batch_size=BATCH_SIZE,
+                          random_crop=False)
         data = dataset.load()
 
     # Global descriptors will hold each batch of embeddings temporarily to allow batched predictions
@@ -57,7 +56,8 @@ def test(model: SiameseModel = None, model_name="unnamed_model", data=None, base
     global_distances = np.square(scipy.spatial.distance.cdist(global_gnd_descriptors, global_sat_descriptors))
 
     results = recall_at_k(global_distances)
-    print(f"\ntop   1: {results[0]}\n"
+    print(f"\nRecall@K:\n"
+          f"top   1: {results[0]}\n"
           f"top   5: {results[1]}\n"
           f"top  10: {results[2]}\n"
           f"top  50: {results[3]}\n"
@@ -67,9 +67,16 @@ def test(model: SiameseModel = None, model_name="unnamed_model", data=None, base
           f"top  5%: {results[7]}\n"
           f"top 10%: {results[8]}\n")
 
+    pssr = proportional_search_space_reduction(global_distances)
+    print(f"Proportional Search Space Reduction:\n"
+          f"pssr - mean: {pssr[0]}  max: {pssr[1]}  min: {pssr[2]}\n"
+          f"bounds - mean: {pssr[3]} max: {pssr[4]}  min: {pssr[5]}")
+
     with open(RESULTS_PATH, 'a') as file:
         for r in results:
             file.write(f"{r},")
+        for p in pssr:
+            file.write(f"{p}",)
         file.write(f"\n")
 
 

@@ -89,5 +89,5 @@ class Dataset:
         dataset = dataset.shuffle(buffer_size=64)
         dataset = dataset.map(self._preprocess_triplets)
         dataset = dataset.prefetch(16)
-        print(f"{dataset.__len__() * self.batch_size} images found")
+        print(f"{dataset.__len__() * self.batch_size} images found (This might take some time)")
         return dataset
