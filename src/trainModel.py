@@ -23,6 +23,7 @@ NETVLAD = False
 MODEL_NAME = "vgg16"
 LOAD_WEIGHTS = False
 WEIGHTS_PATH = f"/tf/notebooks/saved_models/{MODEL_NAME}"
+LOSS_TYPE = "hard-margin"
 LOSSES_PATH = f"/tf/notebooks/logs/{MODEL_NAME}/{str(datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))}"
 
 SUBSET = False
@@ -96,8 +97,6 @@ def train(load_from_file: bool = False):
                     loss = soft_margin_triplet_loss(ap_distance, an_distance)
                 else:
                     raise RuntimeError("Either 'hard-margin' or 'logistic' loss must be selected")
-
-                print(loss)
 
                 # Save the loss for updates/metrics
                 losses.append(str(np.mean(loss)))
