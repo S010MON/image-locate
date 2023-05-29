@@ -1,8 +1,13 @@
 import math
+from typing import Tuple, Any
+
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
+
+from numpy import ndarray
+from tqdm import tqdm
 
 
 def preprocess_image(image: tf.Tensor) -> tf.Tensor:
@@ -25,11 +30,10 @@ def preprocess_triplets(anchor: tf.Tensor, positive: tf.Tensor, negative: tf.Ten
             preprocess_image(negative))
 
 
-def load_data(anchor_images_path: str="/tf/CVUSA/clean_ground/",
-              positive_images_path: str="/tf/CVUSA/clean_aerial/",
+def load_data(anchor_images_path: str = "/tf/CVUSA/clean_ground/",
+              positive_images_path: str = "/tf/CVUSA/clean_aerial/",
               input_shape=(200, 200),
               batch_size: int = 16) -> tf.data.Dataset:
-
     # Create datasets
     anchor_dataset = tf.keras.utils.image_dataset_from_directory(anchor_images_path,
                                                                  label_mode=None,
@@ -109,7 +113,7 @@ def sample_bilinear(signal: np.ndarray, rx, ry):
     return (iy1 - ry)[..., na] * fx1 + (ry - iy0)[..., na] * fx2
 
 
-def polar(img, output_shape=(512,512)):
+def polar(img, output_shape=(512, 512)):
     S = img.shape[0]  # Original size of the aerial image
     height = output_shape[0]  # Height of polar transformed aerial image
     width = output_shape[1]  # Width of polar transformed aerial image
@@ -125,7 +129,9 @@ def polar(img, output_shape=(512,512)):
 
 
 def visualise(anchor, positive, negative):
-    """Visualise a few triplets from the supplied batches."""
+    """
+    Visualise a few triplets from the supplied batches.
+    """
 
     def show(ax, image):
         ax.imshow(image)
@@ -142,13 +148,12 @@ def visualise(anchor, positive, negative):
 
 
 def display(images, axis='off', cmap=None):
-
-    fig = plt.figure(figsize=(15,10))
+    fig = plt.figure(figsize=(15, 10))
     cols = 2
-    rows = math.ceil(len(images)/2)
+    rows = math.ceil(len(images) / 2)
 
     for i in range(len(images)):
-        fig.add_subplot(rows, cols, i+1)
+        fig.add_subplot(rows, cols, i + 1)
         plt.imshow(images[i], cmap=cmap)
         plt.axis(axis)
 
@@ -164,3 +169,40 @@ def format_timedelta(td: timedelta):
     minutes, seconds = divmod(remainder, 60)
     return f"{hours}:{minutes:02}:{seconds:02}"
 
+
+def recall_at_k(distances: np.ndarray) -> tuple:
+    """
+    Calculate the recall @k for top 1, 5, 10 and 1%, 5%, 10%
+    :param distances: a distance matrix of shape (gnd_size, sat_size)
+    :return: a tuple of (top_1, top_5, top_10, top_percent) of the images recalled over the whole dataset
+    """
+    count = distances.shape[0]
+    correct_dists = distances.diagonal()
+    # mask = np.subtract(np.ones(count), np.eye(count))
+    sorted_dists = np.sort(distances, axis=1)
+
+    print("Printing correct distances ...")
+    for d in correct_dists:
+        print(d)
+
+    top_1 = np.sum(correct_dists <= sorted_dists[:, 1]) / count * 100
+    top_5 = np.sum(correct_dists <= sorted_dists[:, 5]) / count * 100
+    top_10 = np.sum(correct_dists <= sorted_dists[:, 10]) / count * 100
+    top_50 = np.sum(correct_dists <= sorted_dists[:, 50]) / count * 100
+    top_100 = np.sum(correct_dists <= sorted_dists[:, 100]) / count * 100
+    top_500 = np.sum(correct_dists <= sorted_dists[:, 500]) / count * 100
+
+    one_percent_idx = int(float(count) * 0.01)
+    top_one_percent = np.sum(correct_dists <= sorted_dists[:, one_percent_idx]) / count * 100
+
+    five_percent_idx = int(float(count) * 0.05)
+    top_five_percent = (np.sum(correct_dists <= sorted_dists[:, five_percent_idx])) / count * 100
+
+    ten_percent_idx = int(float(count) * 0.1)
+    top_ten_percent = (np.sum(correct_dists <= sorted_dists[:, ten_percent_idx])) / count * 100
+
+    print("1% idx ", one_percent_idx, "| 5% idx ", five_percent_idx, "| 10% idx ", ten_percent_idx)
+    print(f"top: 1={sorted_dists[0, -1]}, 5={sorted_dists[0, -5]} 10={sorted_dists[0, -10]}\n"
+          f"top: 1%={sorted_dists[0, -one_percent_idx]}, 5%={sorted_dists[0, -five_percent_idx]} 10%={sorted_dists[0, -ten_percent_idx]}")
+
+    return top_1, top_5, top_10, top_50, top_100, top_500, top_one_percent, top_five_percent, top_ten_percent

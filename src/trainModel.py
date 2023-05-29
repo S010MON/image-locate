@@ -7,6 +7,7 @@ from keras import optimizers
 from models import SiameseModel
 from losses import max_margin_triplet_loss, soft_margin_triplet_loss
 from utils import load_data, format_timedelta
+from testModel import test
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 print("Tensorflow version:", tf.__version__)
@@ -17,10 +18,21 @@ print("Num GPUs Available: ", len(gpus))
 BATCH_SIZE = 16
 MARGIN = 0.5
 EPOCHS = 10
-WEIGHTS_PATH = "/tf/notebooks/cvm-net"
+BASE_MODEL = 'vgg16'
+NETVLAD = False
+MODEL_NAME = "vgg16"
 LOAD_WEIGHTS = False
-LOSSES_PATH = "/tf/notebooks/logs/" + str(datetime.now().strftime("%Y-%m-%d_%H:%M:%S"))
-LOSS_TYPE = "logistic"  # Choose from 'logistic' or 'hard-margin'
+WEIGHTS_PATH = f"/tf/notebooks/saved_models/{MODEL_NAME}"
+LOSSES_PATH = f"/tf/notebooks/logs/{MODEL_NAME}/{str(datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))}"
+
+SUBSET = False
+if SUBSET:
+    gnd_images_path = "/tf/CVUSA/terrestrial"
+    sat_images_path = "/tf/CVUSA/satellite"
+else:
+    gnd_images_path = "/tf/CVUSA/clean_ground"
+    sat_images_path = "/tf/CVUSA/clean_aerial"
+
 
 
 def print_progress(epoch, step, total_steps, total_time, total_loss):
@@ -33,17 +45,27 @@ def print_progress(epoch, step, total_steps, total_time, total_loss):
     eta = timedelta(seconds=np.multiply(avg_time_step, (total_steps - step)))
     print(f"\repoch:{epoch}  {step}/{total_steps} "
           f"[{progress * '='}>{(50 - progress) * ' '}] "
-          f"loss: {np.round(total_loss / step_f, decimals=2)}\t"
-          f"{int(avg_time_step * 1000)}ms/step\t"
-          f"ETA: {format_timedelta(eta)} ", end="")
+          f"loss: {np.round(total_loss / step_f, decimals=2)}    "
+          f"{int(avg_time_step * 1000)}ms/step    "
+          f"ETA: {format_timedelta(eta)}      ", end="")
 
 
 def train(load_from_file: bool = False):
-    train_data = load_data(anchor_images_path="/tf/CVUSA/terrestrial",  # "/tf/CVUSA/clean_ground",
-                           positive_images_path="/tf/CVUSA/satellite",  # "/tf/CVUSA/clean_aerial",
+
+    input_shape = tuple
+    if BASE_MODEL == 'vgg16':
+        input_shape = (224, 224)
+    elif BASE_MODEL == 'resnet':
+        input_shape = (200, 200)
+    else:
+        raise ValueError("BASE_MODEL value must be 'vgg16' or 'resnet'")
+
+    train_data = load_data(anchor_images_path=gnd_images_path,
+                           positive_images_path=sat_images_path,
+                           input_shape=input_shape,
                            batch_size=BATCH_SIZE)
 
-    model = SiameseModel()
+    model = SiameseModel(base_network=BASE_MODEL, netvlad=NETVLAD)
 
     if load_from_file:
         model.load(WEIGHTS_PATH)
@@ -58,14 +80,14 @@ def train(load_from_file: bool = False):
         losses = []
         start_time = time.time()
 
-        for step, (a, p, n) in enumerate(train_data.as_numpy_iterator()):
+        for step, (gnd, sat_p, sat_n) in enumerate(train_data.as_numpy_iterator()):
 
-            # Mine hard triplets
-            n = model.mine_hard_triplets(a, p, n)
+            # Mine hard triplets, rearranges the negatives to be hard
+            sat_n = model.mine_hard_triplets(gnd, sat_p, sat_n)
 
             with tf.GradientTape() as tape:
                 # Forward pass on the Hard Triplets
-                ap_distance, an_distance = model.siamese_network((a, p, n))
+                ap_distance, an_distance = model.siamese_network((gnd, sat_p, sat_n))
 
                 # Compute the loss
                 if LOSS_TYPE == "hard-margin":
@@ -94,6 +116,8 @@ def train(load_from_file: bool = False):
             # Output progress update
             print_progress(epoch, step, total_steps, total_time, total_loss)
 
+        print(f"completed epoch {epoch} in {format_timedelta(timedelta(seconds=(time.time() - start_time)))}")
+
         # Save weights and losses each epoch
         print(f"\nsaving weights to: {WEIGHTS_PATH}")
         model.siamese_network.save(WEIGHTS_PATH)
@@ -104,24 +128,7 @@ def train(load_from_file: bool = False):
                 file.write(loss + ",\n")
             losses = []
 
-
-def test():
-    test_data = load_data(anchor_images_path="/tf/CVUSA/terrestrial",
-                          positive_images_path="/tf/CVUSA/satellite",
-                          batch_size=BATCH_SIZE)
-
-    model = SiameseModel()
-    model.load(WEIGHTS_PATH)
-    optimiser = optimizers.Adam(0.001)
-    model.compile(optimizer=optimiser, weighted_metrics=[])
-
-    total_steps = test_data.__len__()
-    total_loss = -1
-    losses = []
-    start_time = time.time()
-
-    for step, (a, p, n) in enumerate(test_data.as_numpy_iterator()):
-        pass
+        test(model=model, model_name=MODEL_NAME)
 
 if __name__ == "__main__":
     train(load_from_file=LOAD_WEIGHTS)
