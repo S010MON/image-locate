@@ -23,15 +23,15 @@ BATCH_SIZE = 16
 MARGIN = 0.5
 EPOCHS = 10
 BASE_MODEL = 'vgg16'
-NETVLAD = False
-MODEL_NAME = "vgg16"
-LOAD_WEIGHTS = False
-WEIGHTS_PATH = f"/tf/notebooks/saved_models/"
+NETVLAD = True
+MODEL_NAME = "cvm-net_2"
+LOAD_WEIGHTS = True
+WEIGHTS_PATH = f"/tf/notebooks/saved_models/{MODEL_NAME}"
 LOSS_TYPE = "hard-margin"
 LOSSES_PATH = f"/tf/notebooks/logs/{MODEL_NAME}/"
 LOSSES_FILE = str(datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
 
-SUBSET = True
+SUBSET = False
 if SUBSET:
     gnd_images_path = "/tf/CVUSA/terrestrial"
     sat_images_path = "/tf/CVUSA/satellite"
@@ -90,6 +90,7 @@ def train(load_from_file: bool = False):
     model = SiameseModel(base_network=BASE_MODEL, netvlad=NETVLAD)
 
     if load_from_file:
+        print("Loading weights from file")
         model.load(WEIGHTS_PATH)
 
     optimiser = optimizers.Adam(0.001)

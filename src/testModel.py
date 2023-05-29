@@ -76,7 +76,7 @@ def test(model: SiameseModel = None, model_name="unnamed_model", data=None, base
         for r in results:
             file.write(f"{r},")
         for p in pssr:
-            file.write(f"{p}",)
+            file.write(f"{p},")
         file.write(f"\n")
 
 
