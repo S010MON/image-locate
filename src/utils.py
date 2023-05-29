@@ -1,67 +1,7 @@
 import math
-from typing import Tuple, Any
-
 import numpy as np
-import tensorflow as tf
 import matplotlib.pyplot as plt
-from datetime import datetime, timedelta
-
-from numpy import ndarray
-from tqdm import tqdm
-
-
-def preprocess_image(image: tf.Tensor) -> tf.Tensor:
-    image = tf.divide(image, 255.0)
-    return image
-
-
-def preprocess_triplets(anchor: tf.Tensor, positive: tf.Tensor, negative: tf.Tensor) -> tuple:
-    """
-    Given three filepaths, load and preprocess each and return the tuple of
-    all three.
-    :param anchor: the anchor image path
-    :param positive: the positive image path
-    :param negative: the negative image path
-    :return: tuple of three preprocessed images
-    """
-
-    return (preprocess_image(anchor),
-            preprocess_image(positive),
-            preprocess_image(negative))
-
-
-def load_data(anchor_images_path: str = "/tf/CVUSA/clean_ground/",
-              positive_images_path: str = "/tf/CVUSA/clean_aerial/",
-              input_shape=(200, 200),
-              batch_size: int = 16) -> tf.data.Dataset:
-    # Create datasets
-    anchor_dataset = tf.keras.utils.image_dataset_from_directory(anchor_images_path,
-                                                                 label_mode=None,
-                                                                 color_mode='rgb',
-                                                                 image_size=input_shape,
-                                                                 batch_size=batch_size,
-                                                                 shuffle=False)
-
-    positive_dataset = tf.keras.utils.image_dataset_from_directory(positive_images_path,
-                                                                   label_mode=None,
-                                                                   color_mode='rgb',
-                                                                   image_size=input_shape,
-                                                                   batch_size=batch_size,
-                                                                   shuffle=False)
-
-    negative_dataset = tf.keras.utils.image_dataset_from_directory(positive_images_path,
-                                                                   label_mode=None,
-                                                                   color_mode='rgb',
-                                                                   image_size=input_shape,
-                                                                   batch_size=batch_size,
-                                                                   shuffle=True,
-                                                                   seed=42)
-
-    dataset = tf.data.Dataset.zip((anchor_dataset, positive_dataset, negative_dataset))
-    dataset = dataset.shuffle(buffer_size=64)
-    dataset = dataset.map(preprocess_triplets)
-    dataset = dataset.prefetch(16)
-    return dataset
+from datetime import timedelta
 
 
 def sample_within_bounds(signal: np.ndarray, x, y, bounds):
@@ -169,40 +109,3 @@ def format_timedelta(td: timedelta):
     minutes, seconds = divmod(remainder, 60)
     return f"{hours}:{minutes:02}:{seconds:02}"
 
-
-def recall_at_k(distances: np.ndarray) -> tuple:
-    """
-    Calculate the recall @k for top 1, 5, 10 and 1%, 5%, 10%
-    :param distances: a distance matrix of shape (gnd_size, sat_size)
-    :return: a tuple of (top_1, top_5, top_10, top_percent) of the images recalled over the whole dataset
-    """
-    count = distances.shape[0]
-    correct_dists = distances.diagonal()
-    # mask = np.subtract(np.ones(count), np.eye(count))
-    sorted_dists = np.sort(distances, axis=1)
-
-    print("Printing correct distances ...")
-    for d in correct_dists:
-        print(d)
-
-    top_1 = np.sum(correct_dists <= sorted_dists[:, 1]) / count * 100
-    top_5 = np.sum(correct_dists <= sorted_dists[:, 5]) / count * 100
-    top_10 = np.sum(correct_dists <= sorted_dists[:, 10]) / count * 100
-    top_50 = np.sum(correct_dists <= sorted_dists[:, 50]) / count * 100
-    top_100 = np.sum(correct_dists <= sorted_dists[:, 100]) / count * 100
-    top_500 = np.sum(correct_dists <= sorted_dists[:, 500]) / count * 100
-
-    one_percent_idx = int(float(count) * 0.01)
-    top_one_percent = np.sum(correct_dists <= sorted_dists[:, one_percent_idx]) / count * 100
-
-    five_percent_idx = int(float(count) * 0.05)
-    top_five_percent = (np.sum(correct_dists <= sorted_dists[:, five_percent_idx])) / count * 100
-
-    ten_percent_idx = int(float(count) * 0.1)
-    top_ten_percent = (np.sum(correct_dists <= sorted_dists[:, ten_percent_idx])) / count * 100
-
-    print("1% idx ", one_percent_idx, "| 5% idx ", five_percent_idx, "| 10% idx ", ten_percent_idx)
-    print(f"top: 1={sorted_dists[0, -1]}, 5={sorted_dists[0, -5]} 10={sorted_dists[0, -10]}\n"
-          f"top: 1%={sorted_dists[0, -one_percent_idx]}, 5%={sorted_dists[0, -five_percent_idx]} 10%={sorted_dists[0, -ten_percent_idx]}")
-
-    return top_1, top_5, top_10, top_50, top_100, top_500, top_one_percent, top_five_percent, top_ten_percent

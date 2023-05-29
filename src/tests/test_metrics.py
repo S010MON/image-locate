@@ -3,7 +3,7 @@ import time
 import numpy as np
 import scipy
 
-from ..utils import recall_at_k
+from ..metrics import recall_at_k
 
 
 def distance_matrix_loop(x_1: np.ndarray, x_2: np.ndarray) -> np.ndarray:
