@@ -5,7 +5,8 @@ import scipy
 from keras import optimizers
 
 from models import SiameseModel
-from utils import load_data, recall_at_k
+from dataset import Dataset
+from metrics import recall_at_k
 
 # --- Set global variables --- #
 BATCH_SIZE = 16
@@ -13,7 +14,7 @@ EPOCHS = 10
 WEIGHTS_PATH = "/tf/notebooks/saved_models/cvm-net"
 
 
-def test(model: SiameseModel = None, model_name="unnamed_model", data=None):
+def test(model: SiameseModel = None, model_name="unnamed_model", data=None, base_model="vgg16"):
 
     RESULTS_PATH = f"/tf/notebooks/results/{model_name}"
 
@@ -30,10 +31,11 @@ def test(model: SiameseModel = None, model_name="unnamed_model", data=None):
     sat_embedding = model.sat_embedding
 
     if data is None:
-        data = load_data(anchor_images_path="/tf/CVUSA/terrestrial",
-                         positive_images_path="/tf/CVUSA/satellite",
-                         input_shape=model.input_dims,
-                         batch_size=BATCH_SIZE)
+        dataset = Dataset(sat_images_path="/tf/CVUSA/terrestrial",
+                          gnd_images_path="/tf/CVUSA/satellite",
+                          base_network=base_model,
+                          batch_size=BATCH_SIZE)
+        data = dataset.load()
 
     # Global descriptors will hold each batch of embeddings temporarily to allow batched predictions
     global_sat_descriptors = []             # [ [e_1, e_2, ... e_n], [e_1, e_2 ... e_n] ]
