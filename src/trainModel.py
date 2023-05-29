@@ -2,18 +2,21 @@ import os
 import time
 from datetime import timedelta, datetime
 import numpy as np
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Bug workaround source: https://stackoverflow.com/questions/38073432/how-to-suppress-verbose-tensorflow-logging
 import tensorflow as tf
 from keras import optimizers
+
 from models import SiameseModel
 from losses import max_margin_triplet_loss, soft_margin_triplet_loss
 from dataset import Dataset
 from utils import format_timedelta
 from testModel import test
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 print("Tensorflow version:", tf.__version__)
 gpus = tf.config.experimental.list_physical_devices('GPU')
 print("Num GPUs Available: ", len(gpus))
+tf.keras.utils.disable_interactive_logging()
+
 
 # --- Set global variables --- #
 BATCH_SIZE = 16
@@ -23,9 +26,10 @@ BASE_MODEL = 'vgg16'
 NETVLAD = False
 MODEL_NAME = "vgg16"
 LOAD_WEIGHTS = False
-WEIGHTS_PATH = f"/tf/notebooks/saved_models/{MODEL_NAME}"
+WEIGHTS_PATH = f"/tf/notebooks/saved_models/"
 LOSS_TYPE = "hard-margin"
-LOSSES_PATH = f"/tf/notebooks/logs/{MODEL_NAME}/{str(datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))}"
+LOSSES_PATH = f"/tf/notebooks/logs/{MODEL_NAME}/"
+LOSSES_FILE = str(datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
 
 SUBSET = True
 if SUBSET:
@@ -49,6 +53,30 @@ def print_progress(epoch, step, total_steps, total_time, total_loss):
           f"loss: {np.round(total_loss / step_f, decimals=2)}    "
           f"{int(avg_time_step * 1000)}ms/step    "
           f"ETA: {format_timedelta(eta)}      ", end="")
+
+
+def save_losses(losses: list) -> list:
+    """
+    :param losses: to save to location at LOSSES_PATH
+    :return: a new empty list
+    """
+    print(f"saving losses to: {LOSSES_PATH}")
+    if not os.path.exists(LOSSES_PATH):
+        os.mkdir(LOSSES_PATH)
+
+    path = os.path.join(LOSSES_PATH, LOSSES_FILE)
+    with open(path, "a") as file:
+        for loss in losses:
+            file.write(loss + ",\n")
+
+    return []
+
+
+def save_weights(model: SiameseModel) -> None:
+    print(f"\nsaving weights to: {WEIGHTS_PATH}")
+    if not os.path.exists(WEIGHTS_PATH):
+        os.mkdir(WEIGHTS_PATH)
+    model.siamese_network.save(WEIGHTS_PATH)
 
 
 def train(load_from_file: bool = False):
@@ -75,6 +103,10 @@ def train(load_from_file: bool = False):
         start_time = time.time()
 
         for step, (gnd, sat_p, sat_n) in enumerate(train_data.as_numpy_iterator()):
+
+            if gnd.shape[0] != BATCH_SIZE:
+                print("\nOdd batch size found, skipping ...")
+                continue
 
             # Mine hard triplets, rearranges the negatives to be hard
             sat_n = model.mine_hard_triplets(gnd, sat_p, sat_n)
@@ -111,16 +143,8 @@ def train(load_from_file: bool = False):
         print(f"completed epoch {epoch} in {format_timedelta(timedelta(seconds=(time.time() - start_time)))}")
 
         # Save weights and losses each epoch
-        print(f"\nsaving weights to: {WEIGHTS_PATH}")
-        if not os.path.exists(WEIGHTS_PATH):
-            os.mkdir(WEIGHTS_PATH)
-        model.siamese_network.save(WEIGHTS_PATH)
-
-        print(f"saving losses to: {LOSSES_PATH}")
-        with open(LOSSES_PATH, "a") as file:
-            for loss in losses:
-                file.write(loss + ",\n")
-            losses = []
+        save_weights(model)
+        losses = save_losses(losses)
 
         test(model=model, model_name=MODEL_NAME)
 
