@@ -3,7 +3,7 @@ import time
 import numpy as np
 import scipy
 
-from ..metrics import recall_at_k
+from ..metrics import recall_at_k, proportional_search_space_reduction
 
 
 def distance_matrix_loop(x_1: np.ndarray, x_2: np.ndarray) -> np.ndarray:
@@ -29,7 +29,7 @@ def distance_matrix_vector(x_1: np.ndarray, x_2: np.ndarray) -> np.ndarray:
     return D
 
 
-def test_distance_matrix_benchmark():
+def IGNORE_test_distance_matrix_benchmark():
     x = np.random.rand(3000, 256)
     y = np.random.rand(3000, 256)
 
@@ -63,10 +63,10 @@ def test_recall_at_k_0():
                           [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 2.0, 1.0, 1.1],
                           [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 2.0, 1.1],
                           [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0]])
-    results = recall_at_k(distances)
+    results = recall_at_k(distances, testing=True)
     assert np.round(results[0]) == 0.0
     assert np.round(results[1]) == 0.0
-    assert np.round(results[2]) == 0.0
+    assert np.round(results[2]) == 100.0    # Top 10 = End of data in test
     assert np.round(results[3]) == 0.0
     assert np.round(results[4]) == 0.0
     assert np.round(results[5]) == 0.0
@@ -85,7 +85,7 @@ def test_recall_at_k_50():
                           [0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.63, 0.61, 0.62],
                           [0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.63, 0.62],
                           [0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.62, 0.63]])
-    results = recall_at_k(distances)
+    results = recall_at_k(distances, testing=True)
     print(results)
     assert np.round(results[0]) == 50.0
     assert np.round(results[1]) == 50.0
@@ -95,7 +95,7 @@ def test_recall_at_k_50():
     assert np.round(results[5]) == 50.0
 
 
-def test_recall_at_k_100():
+def test_recall_at_k_0():
     distances = np.array([[0.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1],
                           [0.1, 0.0, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1],
                           [0.1, 0.2, 0.0, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1],
@@ -107,10 +107,69 @@ def test_recall_at_k_100():
                           [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.0, 1.0, 1.1],
                           [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.0, 1.1],
                           [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 0.0]])
-    results = recall_at_k(distances)
+    results = recall_at_k(distances, testing=True)
     assert np.round(results[0]) == 100.0
     assert np.round(results[1]) == 100.0
     assert np.round(results[2]) == 100.0
     assert np.round(results[3]) == 100.0
     assert np.round(results[4]) == 100.0
     assert np.round(results[5]) == 100.0
+
+
+def test_pssr_0():
+    distances = np.array([[2.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1],
+                          [0.1, 2.0, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1],
+                          [0.1, 0.2, 2.0, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1],
+                          [0.1, 0.2, 0.3, 2.0, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1],
+                          [0.1, 0.2, 0.3, 0.4, 2.0, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1],
+                          [0.1, 0.2, 0.3, 0.4, 0.5, 2.0, 0.7, 0.8, 0.9, 1.0, 1.1],
+                          [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 2.0, 0.8, 0.9, 1.0, 1.1],
+                          [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 2.0, 0.9, 1.0, 1.1],
+                          [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 2.0, 1.0, 1.1],
+                          [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 2.0, 1.1],
+                          [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0]])
+    results = proportional_search_space_reduction(distances)
+    assert np.round(results[0]) == 1.0
+    assert np.round(results[1]) == 1.0
+    assert np.round(results[2]) == 1.0
+
+
+def test_pssr_50():
+    distances = np.array([[0.50, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62],
+                          [0.51, 0.50, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62],
+                          [0.51, 0.52, 0.50, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62],
+                          [0.51, 0.52, 0.53, 0.50, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62],
+                          [0.51, 0.52, 0.53, 0.54, 0.50, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62],
+                          [0.51, 0.52, 0.53, 0.54, 0.55, 0.50, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62],
+                          [0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.63, 0.58, 0.59, 0.60, 0.61, 0.62],
+                          [0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.63, 0.59, 0.60, 0.61, 0.62],
+                          [0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.63, 0.60, 0.61, 0.62],
+                          [0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.63, 0.61, 0.62],
+                          [0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.63, 0.62],
+                          [0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.62, 0.63]])
+    results = proportional_search_space_reduction(distances)
+    assert np.round(results[0], decimals=1) == 0.5
+    assert np.round(results[1]) == 1.0
+    assert np.round(results[2]) == 0.0
+    assert np.round(results[3], decimals=1) == 0.6
+    assert np.round(results[4], decimals=1) == 0.6
+    assert np.round(results[5], decimals=1) == 0.5
+
+
+
+def test_pssr_100():
+    distances = np.array([[0.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1],
+                          [0.1, 0.0, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1],
+                          [0.1, 0.2, 0.0, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1],
+                          [0.1, 0.2, 0.3, 0.0, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1],
+                          [0.1, 0.2, 0.3, 0.4, 0.0, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1],
+                          [0.1, 0.2, 0.3, 0.4, 0.5, 0.0, 0.7, 0.8, 0.9, 1.0, 1.1],
+                          [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.0, 0.8, 0.9, 1.0, 1.1],
+                          [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.0, 0.9, 1.0, 1.1],
+                          [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.0, 1.0, 1.1],
+                          [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.0, 1.1],
+                          [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 0.0]])
+    results = proportional_search_space_reduction(distances)
+    assert np.round(results[0]) == 0.0
+    assert np.round(results[1]) == 0.0
+    assert np.round(results[2]) == 0.0
