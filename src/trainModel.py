@@ -5,6 +5,7 @@ import numpy as np
 import tensorflow as tf
 from keras import optimizers
 from models import SiameseModel
+from losses import max_margin_triplet_loss, soft_margin_triplet_loss
 from utils import load_data, format_timedelta
 from testModel import test
 
@@ -15,6 +16,7 @@ print("Num GPUs Available: ", len(gpus))
 
 # --- Set global variables --- #
 BATCH_SIZE = 16
+MARGIN = 0.5
 EPOCHS = 10
 BASE_MODEL = 'vgg16'
 NETVLAD = False
@@ -30,6 +32,7 @@ if SUBSET:
 else:
     gnd_images_path = "/tf/CVUSA/clean_ground"
     sat_images_path = "/tf/CVUSA/clean_aerial"
+
 
 
 def print_progress(epoch, step, total_steps, total_time, total_loss):
@@ -87,8 +90,14 @@ def train(load_from_file: bool = False):
                 ap_distance, an_distance = model.siamese_network((gnd, sat_p, sat_n))
 
                 # Compute the loss
-                loss = ap_distance - an_distance
-                loss = tf.maximum(loss + model.margin, 0.0)
+                if LOSS_TYPE == "hard-margin":
+                    loss = max_margin_triplet_loss(ap_distance, an_distance, alpha=MARGIN)
+                elif LOSS_TYPE == "logistic":
+                    loss = soft_margin_triplet_loss(ap_distance, an_distance)
+                else:
+                    raise RuntimeError("Either 'hard-margin' or 'logistic' loss must be selected")
+
+                print(loss)
 
                 # Save the loss for updates/metrics
                 losses.append(str(np.mean(loss)))
@@ -120,7 +129,6 @@ def train(load_from_file: bool = False):
             losses = []
 
         test(model=model, model_name=MODEL_NAME)
-
 
 if __name__ == "__main__":
     train(load_from_file=LOAD_WEIGHTS)
