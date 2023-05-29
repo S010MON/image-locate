@@ -118,20 +118,20 @@ class SiameseModel(Model):
         super().__init__()
 
         if base_network == 'resnet':
-            input_shape = (200, 200)
+            self.input_dims = (200, 200)
             self.sat_embedding = embedding("Resnet50_Sat_Embedding", base='resnet', netvlad=netvlad)
             self.gnd_embedding = embedding("Resnet50_Gnd_Embedding", base='resnet', netvlad=netvlad)
 
         elif base_network == 'vgg16':
-            input_shape = (224, 224)
+            self.input_dims = (224, 224)
             self.sat_embedding = embedding("VGG16_Sat_Embedding", base='vgg16', netvlad=netvlad)
             self.gnd_embedding = embedding("VGG16_Gnd_Embedding", base='vgg16', netvlad=netvlad)
         else:
             raise ValueError("Base network not selected.  Please choose from 'resnet' or 'vgg16' base networks")
 
-        anchor_input = Input(name="anchor", shape=input_shape + (3,))
-        positive_input = Input(name="positive", shape=input_shape + (3,))
-        negative_input = Input(name="negative", shape=input_shape + (3,))
+        anchor_input = Input(name="anchor", shape=self.input_dims + (3,))
+        positive_input = Input(name="positive", shape=self.input_dims + (3,))
+        negative_input = Input(name="negative", shape=self.input_dims + (3,))
 
         distances = DistanceLayer()(
             self.gnd_embedding(resnet.preprocess_input(anchor_input)),

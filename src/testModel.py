@@ -10,15 +10,12 @@ from utils import load_data, recall_at_k
 # --- Set global variables --- #
 BATCH_SIZE = 16
 EPOCHS = 10
-WEIGHTS_PATH = "/tf/notebooks/cvm-net"
+WEIGHTS_PATH = "/tf/notebooks/saved_models/cvm-net"
 
 
-def test(model=None, data=None):
+def test(model: SiameseModel = None, model_name="unnamed_model", data=None):
 
-    if data is None:
-        data = load_data(anchor_images_path="/tf/CVUSA/terrestrial",
-                         positive_images_path="/tf/CVUSA/satellite",
-                         batch_size=BATCH_SIZE)
+    RESULTS_PATH = f"/tf/notebooks/results/{model_name}"
 
     # Allows for loading a model in for testing at the end of each epoch
     if model is None:
@@ -31,6 +28,12 @@ def test(model=None, data=None):
     # Separate the twins for testing
     gnd_embedding = model.gnd_embedding
     sat_embedding = model.sat_embedding
+
+    if data is None:
+        data = load_data(anchor_images_path="/tf/CVUSA/terrestrial",
+                         positive_images_path="/tf/CVUSA/satellite",
+                         input_shape=model.input_dims,
+                         batch_size=BATCH_SIZE)
 
     # Global descriptors will hold each batch of embeddings temporarily to allow batched predictions
     global_sat_descriptors = []             # [ [e_1, e_2, ... e_n], [e_1, e_2 ... e_n] ]
@@ -55,12 +58,18 @@ def test(model=None, data=None):
     print(f"\ntop   1: {results[0]}\n"
           f"top   5: {results[1]}\n"
           f"top  10: {results[2]}\n"
-          f"top  1%: {results[3]}\n"
-          f"top  5%: {results[4]}\n"
-          f"top 10%: {results[5]}\n")
+          f"top  50: {results[3]}\n"
+          f"top 100: {results[4]}\n"
+          f"top 500: {results[5]}\n"
+          f"top  1%: {results[6]}\n"
+          f"top  5%: {results[7]}\n"
+          f"top 10%: {results[8]}\n")
 
-    with open("/tf/notebooks/logs/validation", 'a') as file:
-        file.write(f"{results[0]},{results[1]},{results[2]},{results[3]},{results[4]},{results[5]}\n")
+    with open(RESULTS_PATH, 'a') as file:
+        for r in results:
+            file.write(f"{r},")
+        file.write(f"\n")
+
 
 if __name__ == "__main__":
     test()
