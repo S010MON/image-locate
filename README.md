@@ -5,7 +5,7 @@ photo.
 ### GPU Setup
 This project runs within a docker container provided by Tensorflow and requires the use of a GPU.  Before running, 
 ensure that you have a GPU compatible with Tensorflow and that is has been set up as per the instructions:
-https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/user-guide.html provided by NVIDIA.
+https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html provided by NVIDIA.
 
 ### Data Setup
 The data used in this study was from the CVUSA dataset from Workman et al. in their paper "Wide-Area Image 
