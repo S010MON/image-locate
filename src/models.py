@@ -1,5 +1,7 @@
+import os
 import numpy as np
 import scipy.spatial.distance
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Bug workaround source: https://stackoverflow.com/questions/38073432/how-to-suppress-verbose-tensorflow-logging
 import tensorflow as tf
 from tensorflow.python.keras.engine.keras_tensor import KerasTensor
 
@@ -10,7 +12,7 @@ from keras.applications.vgg16 import VGG16
 from keras.layers import Flatten, Dense, Layer, Input, BatchNormalization, Conv2D
 
 
-def embedding(name: str, base: str = 'resnet', netvlad=False) -> Model:
+def embedding(name: str, base: str = 'vgg16', netvlad=False) -> Model:
     """
     Creates an embedding layer that takes an image and maps it to a vector
     space

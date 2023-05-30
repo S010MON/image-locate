@@ -12,11 +12,7 @@ from dataset import Dataset
 from utils import format_timedelta
 from testModel import test
 
-print("Tensorflow version:", tf.__version__)
-gpus = tf.config.experimental.list_physical_devices('GPU')
-print("Num GPUs Available: ", len(gpus))
-tf.keras.utils.disable_interactive_logging()
-
+print("Num GPUs Available: ", tf.config.experimental.list_physical_devices('GPU'))
 
 # --- Set global variables --- #
 BATCH_SIZE = 16
