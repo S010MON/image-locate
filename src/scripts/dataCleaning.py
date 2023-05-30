@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from tqdm import tqdm
 
 from keras import Model
 from keras.layers import Flatten, Dense, Dropout
@@ -59,7 +60,6 @@ def load_data(filepath: str) -> tf.data.Dataset:
     dataset = image_dataset_from_directory(filepath,
                                            color_mode='rgb',
                                            image_size=(224, 224))
-    # dataset = dataset.map(preprocess_labelled_image)
     return dataset
 
 
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     print(f"Data: {len(flickr_data)} files")
     count = 0
 
-    for data in flickr_data:
+    for data in tqdm(flickr_data):
         count += 1
 
         filepath = "/tf/CVUSA/" + data[0]
@@ -119,7 +119,7 @@ if __name__ == "__main__":
         print(f"{data[0]} - {count}/{len(flickr_data)}: {round(100* (count/len(flickr_data)), 0)}%")
 
         img = load_and_preprocess_img(filepath)
-        features = model.predict(img)
+        features = model.predict(img, verbose=0)
         features = features[0].reshape(1, -1)
         classification = clf.predict(features)
 
