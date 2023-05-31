@@ -53,7 +53,9 @@ def test(model: SiameseModel = None, model_name="unnamed_model", data=None, base
     global_gnd_descriptors = np.concatenate(global_gnd_descriptors)
     global_sat_descriptors = np.concatenate(global_sat_descriptors)
 
+    print(" Calculating global distance matrix ...", end="")
     global_distances = np.square(scipy.spatial.distance.cdist(global_gnd_descriptors, global_sat_descriptors))
+    print(" done")
 
     results = recall_at_k(global_distances)
     print(f"\nRecall@K:\n"

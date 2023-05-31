@@ -1,15 +1,15 @@
-import os, sys, shutil
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import os
+import shutil
+import sys
 import numpy as np
-
-os.environ[
-    'TF_CPP_MIN_LOG_LEVEL'] = '2'  # Bug workaround source: https://stackoverflow.com/questions/38073432/how-to-suppress-verbose-tensorflow-logging
-import tensorflow as tf
-from sklearn.cluster import MiniBatchKMeans
 from tqdm import tqdm
+from pathlib import Path
+from sklearn.cluster import MiniBatchKMeans
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Bug workaround source: https://stackoverflow.com/questions/38073432/how-to-suppress-verbose-tensorflow-logging
+import tensorflow as tf
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # Allows the importing of parent modules
 from models import SiameseModel
 from dataCleaning import load_and_preprocess_img
 
