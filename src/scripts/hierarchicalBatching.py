@@ -17,8 +17,8 @@ print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
 model = SiameseModel(base_network='vgg16', netvlad=True)
 
-input_path_sat = "/tf/CVUSA/satellite"
-input_path_gnd = "/tf/CVUSA/terrestrial"
+input_path_sat = "/tf/CVUSA/sat_test"
+input_path_gnd = "/tf/CVUSA/gnd_test"
 output_path_sat = "/tf/CVUSA/hier_batch/sat"
 output_path_gnd = "/tf/CVUSA/hier_batch/gnd"
 
@@ -52,10 +52,14 @@ with open("hierarchical_batches.csv", "w") as file:
 # Make sure destination files exist
 for n in range(n_clusters):
     if not os.path.exists(os.path.join(output_path_sat, str(n))):
-        os.mkdir(os.path.join(output_path_sat, str(n)))
+        sat_dir_n = os.path.join(output_path_sat, str(n))
+        print("Making dir: ", sat_dir_n)
+        os.makedirs(sat_dir_n)
 
     if not os.path.exists(os.path.join(output_path_gnd, str(n))):
-        os.mkdir(os.path.join(output_path_gnd, str(n)))
+        gnd_dir_n = os.path.join(output_path_gnd, str(n))
+        print("Making dir: ", gnd_dir_n)
+        os.makedirs(gnd_dir_n)
 
 # Copy files over to new homes
 for i, file_name in enumerate(tqdm(file_names)):
