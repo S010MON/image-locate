@@ -108,4 +108,3 @@ def format_timedelta(td: timedelta):
     hours, remainder = divmod(seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
     return f"{hours}:{minutes:02}:{seconds:02}"
-

@@ -1,7 +1,10 @@
 import os
 import numpy as np
+import requests
 import scipy.spatial.distance
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Bug workaround source: https://stackoverflow.com/questions/38073432/how-to-suppress-verbose-tensorflow-logging
+
+os.environ[
+    'TF_CPP_MIN_LOG_LEVEL'] = '2'  # Bug workaround source: https://stackoverflow.com/questions/38073432/how-to-suppress-verbose-tensorflow-logging
 import tensorflow as tf
 from tensorflow.python.keras.engine.keras_tensor import KerasTensor
 
@@ -10,6 +13,40 @@ from keras import Model, Sequential
 from keras.applications import resnet
 from keras.applications.vgg16 import VGG16
 from keras.layers import Flatten, Dense, Layer, Input, BatchNormalization, Conv2D
+
+
+def download_file(url, save_path):
+    response = requests.get(url)
+    if response.status_code == 200:
+        with open(save_path, 'wb') as file:
+            file.write(response.content)
+        print(f"File downloaded successfully and saved at {save_path}")
+    else:
+        print(f"Failed to download file. Status code: {response.status_code}")
+
+
+def download_model(model_name: str):
+    """
+    Download the model from object storage
+    """
+    valid_models = {"cvm-net"}
+    if model_name not in valid_models:
+        raise ValueError(f"invalid argument 'model_name' was '{model_name}' must be one of the following "
+                         f"{str(valid_models)}.")
+
+    if model_name == "cvm-net":
+        files = {
+            "/tf/notebooks/saved_models/cvm-net/fingerprint.pb": "https://image-locate-models.eu-central-1.linodeobjects.com/fingerprint.pb",
+            "/tf/notebooks/saved_models/cvm-net/keras_metadata.pb": "https://image-locate-models.eu-central-1.linodeobjects.com/keras_metadata.pb",
+            "/tf/notebooks/saved_models/cvm-net/saved_model.pb": "https://image-locate-models.eu-central-1.linodeobjects.com/saved_model.pb",
+            "/tf/notebooks/saved_models/cvm-net/variables/variables.index": "https://image-locate-models.eu-central-1.linodeobjects.com/variables.data-00000-of-00001",
+            "/tf/notebooks/saved_models/cvm-net/variables/variables.data-00000-of-000001": "https://image-locate-models.eu-central-1.linodeobjects.com/variables.index",
+        }
+
+    for path, url in files.items():
+        if not os.path.exists(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path))
+        download_file(url, path)
 
 
 def embedding(name: str, base: str = 'vgg16', netvlad=False) -> Model:
@@ -112,6 +149,7 @@ class NetVLAD(Layer):
         Paper: NetVLAD - CNN architecture for weakly supervised place recognition https://arxiv.org/abs/1511.07247
         Implementation: https://github.com/NHGJem/tensorflow2-NetVLAD/blob/master/netvlad_layer.py
     """
+
     def __init__(self,
                  input_shape,
                  K=64,
