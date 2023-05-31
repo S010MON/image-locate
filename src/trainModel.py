@@ -12,7 +12,7 @@ from dataset import Dataset
 from utils import format_timedelta
 from testModel import test
 
-print("Num GPUs Available: ", tf.config.experimental.list_physical_devices('GPU'))
+print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 
 # --- Set global variables --- #
 BATCH_SIZE = 16
@@ -20,8 +20,8 @@ MARGIN = 0.5
 EPOCHS = 10
 BASE_MODEL = 'vgg16'
 NETVLAD = True
-MODEL_NAME = "cvm-net_2"
-LOAD_WEIGHTS = True
+MODEL_NAME = "cvm-net"
+LOAD_WEIGHTS = False
 WEIGHTS_PATH = f"/tf/notebooks/saved_models/{MODEL_NAME}"
 LOSS_TYPE = "hard-margin"
 LOSSES_PATH = f"/tf/notebooks/logs/{MODEL_NAME}/"
@@ -29,11 +29,11 @@ LOSSES_FILE = str(datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
 
 SUBSET = False
 if SUBSET:
-    gnd_images_path = "/tf/CVUSA/terrestrial"
-    sat_images_path = "/tf/CVUSA/satellite"
+    gnd_images_path = "/tf/CVUSA/gnd_test"
+    sat_images_path = "/tf/CVUSA/sat_test"
 else:
-    gnd_images_path = "/tf/CVUSA/clean_ground"
-    sat_images_path = "/tf/CVUSA/clean_aerial"
+    gnd_images_path = "/tf/CVUSA/gnd_train"
+    sat_images_path = "/tf/CVUSA/sat_train"
 
 
 def print_progress(epoch, step, total_steps, total_time, total_loss):

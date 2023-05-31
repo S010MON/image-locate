@@ -29,8 +29,8 @@ def test(model: SiameseModel = None, model_name="unnamed_model", data=None, base
     sat_embedding = model.sat_embedding
 
     if data is None:
-        dataset = Dataset(sat_images_path="/tf/CVUSA/terrestrial",
-                          gnd_images_path="/tf/CVUSA/satellite",
+        dataset = Dataset(sat_images_path="/tf/CVUSA/sat_test",
+                          gnd_images_path="/tf/CVUSA/gnd_test",
                           base_network=base_model,
                           batch_size=BATCH_SIZE,
                           random_crop=False)
