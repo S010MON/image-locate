@@ -97,7 +97,7 @@ def embedding(name: str, base: str = 'vgg16', netvlad=False) -> Model:
         return Model(base_cnn.input, output, name=name)
 
 
-def resnet_embedding(name: str, netvlad=True) -> Model:
+def resnet_embedding(name: str, netvlad=False) -> Model:
     base_cnn = resnet.ResNet50(
         weights="imagenet",
         input_shape=(200, 200, 3),

@@ -18,10 +18,10 @@ print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('
 BATCH_SIZE = 16
 MARGIN = 0.5
 EPOCHS = 10
-BASE_MODEL = 'vgg16'
-NETVLAD = True
-MODEL_NAME = "cvm-net"
-LOAD_WEIGHTS = True
+BASE_MODEL = 'resnet'
+NETVLAD = False
+MODEL_NAME = "resnet"
+LOAD_WEIGHTS = False
 WEIGHTS_PATH = f"/tf/notebooks/saved_models/{MODEL_NAME}"
 LOSS_TYPE = "hard-margin"
 LOSSES_PATH = f"/tf/notebooks/logs/{MODEL_NAME}/"
