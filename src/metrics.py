@@ -52,4 +52,4 @@ def proportional_search_space_reduction(distances: np.ndarray) -> tuple:
     count_greater = np.sum(np.greater_equal(boundaries, distances), axis=0)
     pssr = (count_greater / count_total)
     return np.mean(pssr), pssr[np.argmax(pssr)], pssr[np.argmin(pssr)], \
-        np.mean(boundaries), boundaries[np.argmax(boundaries)], boundaries[np.argmin(boundaries)]
+        np.mean(boundaries), boundaries[np.argmax(boundaries)], boundaries[np.argmin(boundaries)], pssr

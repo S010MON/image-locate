@@ -15,6 +15,7 @@ WEIGHTS_PATH = "/tf/notebooks/saved_models/cvm-net"
 def test(model: SiameseModel = None, model_name="unnamed_model", data=None, base_model="vgg16"):
 
     RESULTS_PATH = f"/tf/notebooks/results/{model_name}"
+    PSSR_PATH = RESULTS_PATH + "_pssr"
 
     # Allows for loading a model in for testing at the end of each epoch
     if model is None:
@@ -80,6 +81,11 @@ def test(model: SiameseModel = None, model_name="unnamed_model", data=None, base
         for p in pssr:
             file.write(f"{p},")
         file.write(f"\n")
+
+    with open(PSSR_PATH, "a") as file:
+        for i in pssr[6]:
+            file.write(f"{str(i)},")
+        file.write("\n")
 
 
 if __name__ == "__main__":
