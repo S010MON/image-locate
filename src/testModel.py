@@ -9,10 +9,10 @@ from metrics import recall_at_k, proportional_search_space_reduction
 # --- Set global variables --- #
 BATCH_SIZE = 16
 EPOCHS = 10
-WEIGHTS_PATH = "/tf/notebooks/saved_models/cvm-net"
+WEIGHTS_PATH = "/tf/notebooks/saved_models/resnet"
 
 
-def test(model: SiameseModel = None, model_name="unnamed_model", data=None, base_model="vgg16"):
+def test(model: SiameseModel = None, model_name="unnamed_model", data=None, base_model="vgg16", netvlad=True):
 
     RESULTS_PATH = f"/tf/notebooks/results/{model_name}"
     PSSR_PATH = RESULTS_PATH + "_pssr"
@@ -20,7 +20,7 @@ def test(model: SiameseModel = None, model_name="unnamed_model", data=None, base
     # Allows for loading a model in for testing at the end of each epoch
     if model is None:
         print("Loading Model from file ...")
-        model = SiameseModel()
+        model = SiameseModel(base_network=base_model, netvlad=netvlad)
         model.load(WEIGHTS_PATH)
         optimiser = optimizers.Adam(0.001)
         model.compile(optimizer=optimiser, weighted_metrics=[])
@@ -89,4 +89,4 @@ def test(model: SiameseModel = None, model_name="unnamed_model", data=None, base
 
 
 if __name__ == "__main__":
-    test()
+    test(model_name='resnet', base_model='resnet', netvlad=False)

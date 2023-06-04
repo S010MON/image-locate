@@ -57,7 +57,7 @@ class Dataset:
                 self._preprocess_image(sat_neg))
 
     def load(self) -> tf.data.Dataset:
-        print("Loading data ... ", end="")
+        print("Loading data ... ")
         if not self.random_crop:
             pre_crop_shape = self.input_shape
         else:

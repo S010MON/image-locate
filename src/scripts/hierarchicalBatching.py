@@ -16,8 +16,8 @@ from dataCleaning import load_and_preprocess_img
 
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
-model = SiameseModel(base_network='vgg16', netvlad=True)
-model.load("/tf/notebooks/saved_models/cvm-net/")
+model = SiameseModel(base_network='resnet', netvlad=False)
+model.load("/tf/notebooks/saved_models/resnet/")
 
 input_path_sat = "/tf/CVUSA/sat_train"
 input_path_gnd = "/tf/CVUSA/gnd_train"
@@ -25,28 +25,29 @@ output_path_sat = "/tf/CVUSA/hier_batch/sat"
 output_path_gnd = "/tf/CVUSA/hier_batch/gnd"
 
 
-def super_batch(file_names: list):
-    # Encode embeddings for all images in the list
-    embeddings = np.zeros((len(file_names), 32768))
+def encode_embeddings(file_names: list):
+    print("encode embeddings")
+
     for i, file_name in enumerate(tqdm(file_names)):
         path = os.path.join(input_path_sat, file_name)
-        img_sat = load_and_preprocess_img(path)
-        embeddings[i, :] = model.sat_embedding.predict([img_sat], verbose=0)
+        img_sat = load_and_preprocess_img(path, target_size=(200, 200))
+        embedding = model.sat_embedding.predict([img_sat], verbose=0)
 
+        with open("embeddings.tsv", "a") as file:
+            np.savetxt(file, embedding, delimiter='\t', fmt='%f', newline='\n')
+
+
+def k_means_model(n_clusters: int, embeddings: np.ndarray) -> (np.ndarray, MiniBatchKMeans):
     # Fit K-Means clusters
-    n_clusters = 3
-    kmeans = MiniBatchKMeans(n_clusters=n_clusters,
-                             random_state=0,
-                             batch_size=64,
-                             n_init='auto')
-    preds = kmeans.fit_predict(embeddings)
+    clf = MiniBatchKMeans(n_clusters=n_clusters,
+                          random_state=0,
+                          batch_size=64,
+                          n_init='auto')
+    clf.fit(embeddings)
+    return clf
 
-    # # Write to file just in case / for visualisation
-    # with open("hierarchical_batches.csv", "a") as file:
-    #     file.write("file_name,prediction,dims")
-    #     for i, file_name in enumerate(tqdm(file_names)):
-    #         embedding_str = ",".join(map(str, embeddings[i, :]))
-    #         file.write(f"{file_name},{preds[i]},{embedding_str}\n")
+
+def move_files(file_names: list, preds: np.ndarray, n_clusters: int):
 
     # Make sure destination files exist
     for n in range(n_clusters):
@@ -72,16 +73,47 @@ def super_batch(file_names: list):
 
 
 if __name__ == "__main__":
-    chunk_size = 10000
     file_names = os.listdir(input_path_sat)
-    for idx in range(0, len(file_names), chunk_size):
-        print(f"Processing chunk {idx // chunk_size}")
-        end_idx = idx + chunk_size
+    encode_embeddings(file_names)
 
-        if end_idx >= len(file_names):
-            end_idx = len(file_names) - 1
+    # Take a subset of embeddings to train the classifier
+    with open("embeddings.tsv", "r") as main_file:
+        count = 0
+        limit = 50000
+        while count <= limit:
+            print(f"\rsubset: {count}/{limit}", end="")
+            with open("embeddings_subset.tsv", "a") as subset_file:
+                subset_file.write(main_file.readline())
+                subset_file.write("\n")
+            count += 1
+    print("")
 
-        super_batch(file_names[idx: end_idx])
+    # Train the classifer
+    embeddings = np.loadtxt("embeddings_subset.tsv", delimiter='\t')
+    clf = k_means_model(3, embeddings)
 
-    print("complete")
-    exit(0)
+    # Predict the class on whole dataset
+    with open("embeddings.tsv", "r") as embeddings_file:
+
+        count = 0
+        line = embeddings_file.readline()
+        while line:
+            print(f"\rpredicting: {count}", end="")
+            array = np.fromstring(line, sep='\t', dtype=float).reshape(1, -1)
+            prediction = clf.predict(array)
+            with open("predictions.tsv", "a") as predictions_file:
+                predictions_file.write(f"{prediction}\n")
+            line = embeddings_file.readline()
+            count += 1
+
+    # for idx in range(0, len(file_names), chunk_size):
+    #     print(f"Processing chunk {idx // chunk_size}")
+    #     end_idx = idx + chunk_size
+    #
+    #     if end_idx >= len(file_names):
+    #         end_idx = len(file_names) - 1
+    #
+    #     super_batch(file_names[idx: end_idx])
+    #
+    # print("complete")
+    # exit(0)

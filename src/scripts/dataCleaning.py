@@ -47,9 +47,9 @@ def preprocess_labelled_image(image: tf.Tensor, label) -> tuple:
     return tf.divide(image, 255), label
 
 
-def load_and_preprocess_img(path: str):
+def load_and_preprocess_img(path: str, target_size=(224, 224)):
 
-    img = load_img(path, target_size=(224, 224))
+    img = load_img(path, target_size=target_size)
     ary = img_to_array(img)
     ary = np.expand_dims(ary, axis=0)
     ary = preprocess_input(ary)

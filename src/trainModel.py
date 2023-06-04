@@ -1,3 +1,4 @@
+import math
 import os
 import time
 from datetime import timedelta, datetime
@@ -17,10 +18,10 @@ print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('
 # --- Set global variables --- #
 BATCH_SIZE = 16
 MARGIN = 0.5
-EPOCHS = 10
-BASE_MODEL = 'resnet'
+EPOCHS = 5
+BASE_MODEL = 'vgg16'
 NETVLAD = False
-MODEL_NAME = "resnet"
+MODEL_NAME = "vgg16"
 LOAD_WEIGHTS = False
 WEIGHTS_PATH = f"/tf/notebooks/saved_models/{MODEL_NAME}"
 LOSS_TYPE = "hard-margin"
@@ -36,7 +37,7 @@ else:
     sat_images_path = "/tf/CVUSA/sat_train"
 
 
-def print_progress(epoch, step, total_steps, total_time, total_loss):
+def print_progress(epoch, step, total_steps, total_time, batch_loss, ave_loss):
     if step == 0:
         return  # This stops a divide by zero error - remove at your peril!
 
@@ -46,7 +47,7 @@ def print_progress(epoch, step, total_steps, total_time, total_loss):
     eta = timedelta(seconds=np.multiply(avg_time_step, (total_steps - step)))
     print(f"\repoch:{epoch}  {step}/{total_steps} "
           f"[{progress * '='}>{(50 - progress) * ' '}] "
-          f"loss: {np.round(total_loss / step_f, decimals=2)}    "
+          f"ave loss: {np.round(ave_loss / step_f, decimals=2)}    "
           f"{int(avg_time_step * 1000)}ms/step    "
           f"ETA: {format_timedelta(eta)}      ", end="")
 
@@ -121,7 +122,8 @@ def train(load_from_file: bool = False):
                     raise RuntimeError("Either 'hard-margin' or 'logistic' loss must be selected")
 
                 # Save the loss for updates/metrics
-                losses.append(str(np.mean(loss)))
+                batch_loss = np.mean(loss)
+                losses.append(str(batch_loss))
                 if total_loss == -1:
                     total_loss = np.mean(loss)
                 else:
@@ -135,7 +137,7 @@ def train(load_from_file: bool = False):
             total_time = np.subtract(time.time(), start_time)
 
             # Output progress update
-            print_progress(epoch, step, total_steps, total_time, total_loss)
+            print_progress(epoch, step, total_steps, total_time, batch_loss, total_loss)
 
         print(f"completed epoch in {format_timedelta(timedelta(seconds=(time.time() - start_time)))}")
 
@@ -143,7 +145,7 @@ def train(load_from_file: bool = False):
         save_weights(model)
         losses = save_losses(losses)
 
-        test(model=model, model_name=MODEL_NAME)
+        test(model=model, model_name=MODEL_NAME, base_model=BASE_MODEL)
 
 
 if __name__ == "__main__":
