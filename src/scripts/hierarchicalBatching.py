@@ -16,8 +16,11 @@ from dataCleaning import load_and_preprocess_img
 
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
-model = SiameseModel(base_network='resnet', netvlad=False)
-model.load("/tf/notebooks/saved_models/resnet/")
+model = SiameseModel(base_network='vgg16', netvlad=True)
+model.load("/tf/notebooks/saved_models/cvm-net/")
+
+training_path_sat = "/tf/CVUSA/sat_test"
+training_path_gnd = "/tf/CVUSA/gnd_test"
 
 input_path_sat = "/tf/CVUSA/sat_train"
 input_path_gnd = "/tf/CVUSA/gnd_train"
@@ -25,15 +28,15 @@ output_path_sat = "/tf/CVUSA/hier_batch/sat"
 output_path_gnd = "/tf/CVUSA/hier_batch/gnd"
 
 
-def encode_embeddings(file_names: list):
+def encode_embeddings(file_names: list, input_dir: str, output_file_name: str):
     print("encode embeddings")
 
     for i, file_name in enumerate(tqdm(file_names)):
-        path = os.path.join(input_path_sat, file_name)
-        img_sat = load_and_preprocess_img(path, target_size=(200, 200))
+        path = os.path.join(input_dir, file_name)
+        img_sat = load_and_preprocess_img(path)
         embedding = model.sat_embedding.predict([img_sat], verbose=0)
 
-        with open("embeddings.tsv", "a") as file:
+        with open(output_file_name, "a") as file:
             np.savetxt(file, embedding, delimiter='\t', fmt='%f', newline='\n')
 
 
@@ -47,7 +50,7 @@ def k_means_model(n_clusters: int, embeddings: np.ndarray) -> (np.ndarray, MiniB
     return clf
 
 
-def move_files(file_names: list, preds: np.ndarray, n_clusters: int):
+def move_files(input_dir_sat: str, input_dir_gnd, file_names: list, preds: np.ndarray, n_clusters: int):
 
     # Make sure destination files exist
     for n in range(n_clusters):
@@ -63,41 +66,51 @@ def move_files(file_names: list, preds: np.ndarray, n_clusters: int):
 
     # Copy files over to new homes
     for i, file_name in enumerate(tqdm(file_names)):
-        src_sat = os.path.join(input_path_sat, file_name)
+        src_sat = os.path.join(input_dir_sat, file_name)
         dest_sat = os.path.join(output_path_sat, str(preds[i]), file_name)
         shutil.copy2(src_sat, dest_sat)
 
-        src_gnd = os.path.join(input_path_gnd, file_name)
+        src_gnd = os.path.join(input_dir_gnd, file_name)
         dest_gnd = os.path.join(output_path_gnd, str(preds[i]), file_name)
         shutil.copy2(src_gnd, dest_gnd)
 
 
 if __name__ == "__main__":
-    file_names = os.listdir(input_path_sat)
-    encode_embeddings(file_names)
+    no_clusters = 3
+    training_file_names = os.listdir(training_path_sat)
 
-    # Take a subset of embeddings to train the classifier
-    with open("embeddings.tsv", "r") as main_file:
-        count = 0
-        limit = 50000
-        while count <= limit:
-            print(f"\rsubset: {count}/{limit}", end="")
-            with open("embeddings_subset.tsv", "a") as subset_file:
-                subset_file.write(main_file.readline())
-                subset_file.write("\n")
-            count += 1
-    print("")
+    if not os.path.exists("embeddings_subset.tsv") or not os.path.isfile("embeddings_subset.tsv"):
+        encode_embeddings(training_file_names,
+                          input_dir=training_path_sat,
+                          output_file_name="embeddings_subset.tsv")    # This writes to file due to size
 
-    # Train the classifer
+    # Train the classifier
     embeddings = np.loadtxt("embeddings_subset.tsv", delimiter='\t')
-    clf = k_means_model(3, embeddings)
+    print("K-means clustering ... ", end="")
+    clf = k_means_model(no_clusters, embeddings)
+    predictions = clf.predict(embeddings)
+
+    if not os.path.exists("predictions_subset.tsv") or not os.path.isfile("predictions_subset.tsv"):
+        with open("predictions_subset.tsv", "w") as file:
+            file.write("file_name\tprediction\n")
+            for file_name, prediction in zip(training_file_names, predictions):
+                file.write(f"{file_name}\t{prediction}\n")
+
+    move_files(training_path_sat, training_path_gnd, training_file_names, predictions, no_clusters)
+    print(" Complete")
+
+    exit(0)
+
+    file_names = os.listdir(input_path_sat)
+    encode_embeddings(file_names,
+                      input_dir=input_path_sat,
+                      output_file_name="embeddings.tsv")
 
     # Predict the class on whole dataset
     with open("embeddings.tsv", "r") as embeddings_file:
-
         count = 0
         line = embeddings_file.readline()
-        while line:
+        while line and line != "":
             print(f"\rpredicting: {count}", end="")
             array = np.fromstring(line, sep='\t', dtype=float).reshape(1, -1)
             prediction = clf.predict(array)
@@ -106,14 +119,5 @@ if __name__ == "__main__":
             line = embeddings_file.readline()
             count += 1
 
-    # for idx in range(0, len(file_names), chunk_size):
-    #     print(f"Processing chunk {idx // chunk_size}")
-    #     end_idx = idx + chunk_size
-    #
-    #     if end_idx >= len(file_names):
-    #         end_idx = len(file_names) - 1
-    #
-    #     super_batch(file_names[idx: end_idx])
-    #
-    # print("complete")
-    # exit(0)
+    predictions = np.loadtxt('predictions.tsv', delimiter='\t')
+    move_files(file_names, predictions, no_clusters)
