@@ -21,14 +21,14 @@ MARGIN = 0.5
 EPOCHS = 5
 BASE_MODEL = 'vgg16'
 NETVLAD = False
-MODEL_NAME = "vgg16"
+MODEL_NAME = "cvm-net-2"
 LOAD_WEIGHTS = False
 WEIGHTS_PATH = f"/tf/notebooks/saved_models/{MODEL_NAME}"
 LOSS_TYPE = "hard-margin"
 LOSSES_PATH = f"/tf/notebooks/logs/{MODEL_NAME}/"
 LOSSES_FILE = str(datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
 
-SUBSET = False
+SUBSET = True
 if SUBSET:
     gnd_images_path = "/tf/CVUSA/gnd_test"
     sat_images_path = "/tf/CVUSA/sat_test"
@@ -106,28 +106,18 @@ def train(load_from_file: bool = False):
                 print("\nOdd batch size found, skipping ...")
                 continue
 
-            # Mine hard triplets, rearranges the negatives to be hard
-            sat_n = model.mine_hard_triplets(gnd, sat_p, sat_n)
-
             with tf.GradientTape() as tape:
-                # Forward pass on the Hard Triplets
-                ap_distance, an_distance = model.siamese_network((gnd, sat_p, sat_n))
+                # Forward pass on the triplets
+                gnd_embedding, sat_pos_embedding, sat_neg_embedding = model.siamese_network((gnd, sat_p, sat_n))
 
-                # Compute the loss
-                if LOSS_TYPE == "hard-margin":
-                    loss = max_margin_triplet_loss(ap_distance, an_distance, alpha=MARGIN)
-                elif LOSS_TYPE == "logistic":
-                    loss = soft_margin_triplet_loss(ap_distance, an_distance)
-                else:
-                    raise RuntimeError("Either 'hard-margin' or 'logistic' loss must be selected")
+                loss = max_margin_triplet_loss(gnd_embedding, sat_pos_embedding, sat_neg_embedding, alpha=MARGIN)
 
                 # Save the loss for updates/metrics
-                batch_loss = np.mean(loss)
-                losses.append(str(batch_loss))
+                losses.append(str(loss))
                 if total_loss == -1:
-                    total_loss = np.mean(loss)
+                    total_loss = loss
                 else:
-                    total_loss += np.mean(loss)
+                    total_loss += loss
 
             # Apply gradients to model
             grads = tape.gradient(loss, model.siamese_network.trainable_weights)
@@ -137,7 +127,7 @@ def train(load_from_file: bool = False):
             total_time = np.subtract(time.time(), start_time)
 
             # Output progress update
-            print_progress(epoch, step, total_steps, total_time, batch_loss, total_loss)
+            print_progress(epoch, step, total_steps, total_time, loss, total_loss)
 
         print(f"completed epoch in {format_timedelta(timedelta(seconds=(time.time() - start_time)))}")
 
