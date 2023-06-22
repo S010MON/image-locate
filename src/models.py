@@ -27,19 +27,18 @@ def download_model(model_name: str):
     """
     Download the model from object storage
     """
-    valid_models = {"cvm-net"}
+    valid_models = {"cvm-net", "resnet", "vgg16"}
     if model_name not in valid_models:
         raise ValueError(f"invalid argument 'model_name' was '{model_name}' must be one of the following "
                          f"{str(valid_models)}.")
 
-    if model_name == "cvm-net":
-        files = {
-            "/tf/notebooks/saved_models/cvm-net/fingerprint.pb": "https://image-locate-models.eu-central-1.linodeobjects.com/fingerprint.pb",
-            "/tf/notebooks/saved_models/cvm-net/keras_metadata.pb": "https://image-locate-models.eu-central-1.linodeobjects.com/keras_metadata.pb",
-            "/tf/notebooks/saved_models/cvm-net/saved_model.pb": "https://image-locate-models.eu-central-1.linodeobjects.com/saved_model.pb",
-            "/tf/notebooks/saved_models/cvm-net/variables/variables.index": "https://image-locate-models.eu-central-1.linodeobjects.com/variables.data-00000-of-00001",
-            "/tf/notebooks/saved_models/cvm-net/variables/variables.data-00000-of-000001": "https://image-locate-models.eu-central-1.linodeobjects.com/variables.index",
-        }
+    files = {
+        f"/tf/notebooks/saved_models/{model_name}/fingerprint.pb": f"https://image-locate-models.eu-central-1.linodeobjects.com/{model_name}.fingerprint.pb",
+        f"/tf/notebooks/saved_models/{model_name}/keras_metadata.pb": f"https://image-locate-models.eu-central-1.linodeobjects.com/{model_name}.keras_metadata.pb",
+        f"/tf/notebooks/saved_models/{model_name}/saved_model.pb": f"https://image-locate-models.eu-central-1.linodeobjects.com/{model_name}.saved_model.pb",
+        f"/tf/notebooks/saved_models/{model_name}/variables/variables.index": f"https://image-locate-models.eu-central-1.linodeobjects.com/{model_name}.variables.data-00000-of-00001",
+        f"/tf/notebooks/saved_models/{model_name}/variables/variables.data-00000-of-000001": f"https://image-locate-models.eu-central-1.linodeobjects.com/{model_name}.variables.index",
+    }
 
     for path, url in files.items():
         if not os.path.exists(os.path.dirname(path)):
@@ -204,7 +203,7 @@ class SiameseModel(Model):
        L(A, P, N) = max(‖f(A) - f(P)‖² - ‖f(A) - f(N)‖² + margin, 0)
     """
 
-    def __init__(self, base_network: str = 'resnet', netvlad=False):
+    def __init__(self, base_network: str = 'resnet', netvlad=False, load_weights=True):
         super().__init__()
 
         if base_network == 'resnet':
