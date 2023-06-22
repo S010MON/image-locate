@@ -1,4 +1,4 @@
-# Picture Locate
+# Image Locate
 Cross-view Image Geolocation is the identification of the location of a ground based image by finding a matching aerial 
 photo.
 
