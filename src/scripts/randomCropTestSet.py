@@ -40,5 +40,5 @@ if __name__ == "__main__":
         cropped_image = random_crop(image)
 
         dest = os.path.join(dest_dir_path, file_name)
-        shutil.copy2(src, dest)
+        cv2.imwrite(dest, cropped_image)
 

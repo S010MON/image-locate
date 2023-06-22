@@ -36,13 +36,13 @@ def max_margin_triplet_loss(gnd_embedding: tf.Tensor,
 def soft_margin_triplet_loss(gnd_embedding: tf.Tensor,
                              sat_pos_embedding: tf.Tensor,
                              sat_neg_embedding: tf.Tensor,
-                             loss_weight=1) -> tf.Tensor:
+                             alpha=10.0) -> tf.Tensor:
     """
     L(d_p, d_n) = 1 / (1 + exp(d_p - d_n))
     :param gnd_embedding: (batch_size, dims)
     :param sat_pos_embedding: (batch_size, dims)
     :param sat_neg_embedding: (batch_size, dims)
-    :param loss_weight: the coefficient of the weight of the loss function
+    :param alpha: the coefficient of the weight of the loss function
     :return: a tf.Tensor of losses for each triplet in the batch (batch_size, 1)
     """
 
@@ -57,11 +57,11 @@ def soft_margin_triplet_loss(gnd_embedding: tf.Tensor,
 
     # Ground to satellite
     triplet_dist_gnd2sat = distance_ap - distance_an
-    loss_gnd2sat = tf.reduce_sum(tf.math.log(1 + tf.math.exp(loss_weight * triplet_dist_gnd2sat))) / pair_n
+    loss_gnd2sat = tf.reduce_sum(tf.math.log(1 + tf.math.exp(alpha * triplet_dist_gnd2sat))) / pair_n
 
     # Satellite to ground
     triplet_dist_sat2gnd = tf.expand_dims(distance_ap, 1) - distance_an
-    loss_sat2gnd = tf.reduce_sum(tf.math.log(1 + tf.math.exp(loss_weight * triplet_dist_sat2gnd))) / pair_n
+    loss_sat2gnd = tf.reduce_sum(tf.math.log(1 + tf.math.exp(alpha * triplet_dist_sat2gnd))) / pair_n
 
     loss = (loss_sat2gnd + loss_gnd2sat) / 2.0
     return loss

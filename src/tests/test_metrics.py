@@ -129,9 +129,9 @@ def test_pssr_0():
                           [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 2.0, 1.1],
                           [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0]])
     results = proportional_search_space_reduction(distances)
-    assert np.round(results[0]) == 1.0
-    assert np.round(results[1]) == 1.0
-    assert np.round(results[2]) == 1.0
+    assert np.round(results[0]) == 0.0
+    assert np.round(results[1]) == 0.0
+    assert np.round(results[2]) == 0.0
 
 
 def test_pssr_50():
@@ -170,6 +170,6 @@ def test_pssr_100():
                           [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.0, 1.1],
                           [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 0.0]])
     results = proportional_search_space_reduction(distances)
-    assert np.round(results[0]) == 0.0
-    assert np.round(results[1]) == 0.0
-    assert np.round(results[2]) == 0.0
+    assert np.round(results[0]) == 1.0
+    assert np.round(results[1]) == 1.0
+    assert np.round(results[2]) == 1.0

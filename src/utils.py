@@ -2,7 +2,8 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import timedelta
-
+from keras.applications.vgg16 import preprocess_input
+from keras.utils import load_img, img_to_array
 
 def sample_within_bounds(signal: np.ndarray, x, y, bounds):
     """
@@ -108,3 +109,12 @@ def format_timedelta(td: timedelta):
     hours, remainder = divmod(seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
     return f"{hours}:{minutes:02}:{seconds:02}"
+
+
+def load_and_preprocess_img(path: str, target_size=(224, 224)):
+
+    img = load_img(path, target_size=target_size)
+    ary = img_to_array(img)
+    ary = np.expand_dims(ary, axis=0)
+    ary = preprocess_input(ary)
+    return ary

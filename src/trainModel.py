@@ -17,23 +17,23 @@ print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('
 # --- Set global variables --- #
 BATCH_SIZE = 16
 MARGIN = 0.5
-EPOCHS = 10
+EPOCHS = 1
 BASE_MODEL = 'vgg16'
-NETVLAD = True
-MODEL_NAME = "cvm-net-2"
+NETVLAD = False
+MODEL_NAME = "vgg16"
 LOAD_WEIGHTS = True
 WEIGHTS_PATH = f"/tf/notebooks/saved_models/{MODEL_NAME}"
 LOSS_TYPE = "soft-margin"
 LOSSES_PATH = f"/tf/notebooks/logs/{MODEL_NAME}/"
-LOSSES_FILE = str(datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
+LOSSES_FILE = "final"
 
 SUBSET = False
 if SUBSET:
     gnd_images_path = "/tf/CVUSA/gnd_test"
-    sat_images_path = "/tf/CVUSA/sat_test"
+    sat_images_path = "/tf/CVUSA/sat_test_cropped"
 else:
-    gnd_images_path = "/tf/CVUSA/gnd_train"
-    sat_images_path = "/tf/CVUSA/sat_train"
+    gnd_images_path = "/tf/CVUSA/hier_batch/gnd/0"
+    sat_images_path = "/tf/CVUSA/hier_batch/sat/0"
 
 
 def print_progress(epoch, step, total_steps, total_time, batch_loss, ave_loss):
@@ -46,8 +46,8 @@ def print_progress(epoch, step, total_steps, total_time, batch_loss, ave_loss):
     eta = timedelta(seconds=np.multiply(avg_time_step, (total_steps - step)))
     print(f"\repoch:{epoch}  {step}/{total_steps} "
           f"[{progress * '='}>{(50 - progress) * ' '}] "
-          f"loss: {np.round(batch_loss, decimals=2)}    "
-          f"ave loss: {np.round(ave_loss / step_f, decimals=2)}    "
+          f"loss: {np.round(batch_loss, 2)}    "
+          f"ave loss: {np.round(ave_loss / step_f, 2)}    "
           f"{int(avg_time_step * 1000)}ms/step    "
           f"ETA: {format_timedelta(eta)}      ", end="")
 

@@ -8,7 +8,6 @@ from metrics import recall_at_k, proportional_search_space_reduction
 
 # --- Set global variables --- #
 BATCH_SIZE = 16
-EPOCHS = 10
 WEIGHTS_PATH = "/tf/notebooks/saved_models/resnet"
 
 

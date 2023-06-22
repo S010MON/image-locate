@@ -6,3 +6,4 @@ docker-compose.yml
 .idea
 /src
 /resnet
+/logs

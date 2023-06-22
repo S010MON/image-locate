@@ -1,7 +1,5 @@
 import os
-import numpy as np
 import requests
-import scipy.spatial.distance
 
 os.environ[
     'TF_CPP_MIN_LOG_LEVEL'] = '2'  # Bug workaround source: https://stackoverflow.com/questions/38073432/how-to-suppress-verbose-tensorflow-logging
@@ -65,7 +63,7 @@ def embedding(name: str, base: str = 'vgg16', netvlad=False) -> Model:
 
         trainable = False
         for layer in base_cnn.layers:
-            if layer.name == "block5_conv1":
+            if layer.name == "block4_conv1":
                 trainable = True
             layer.trainable = trainable
 
