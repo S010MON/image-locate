@@ -4,7 +4,7 @@ photo.
 
 ### GPU Setup
 This project runs within a docker container provided by Tensorflow and requires the use of a GPU.  Before running, 
-ensure that you have a GPU compatible with Tensorflow and that is has been set up as per the instructions:
+ensure that you have a GPU compatible with Tensorflow and that it has been set up as per the instructions:
 https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html provided by NVIDIA.
 
 ### Data Setup
@@ -39,13 +39,13 @@ To build and run the project, find the `docker-compose.yml` file and run:
 ```bash
 docker-compose up --build
 ```
-This will build and start a container named `picture-locate` and will provide access to the jupyter server though a link.
+This will build and start a container named `image-locate` and will provide access to the jupyter server though a link.
 Training can be run by entering the container and running the `trainModel.py` file as follows:
 
 ```bash
 docker exec -it image-locate bash
 ```
-This will enter the container and provide a prompt at the `notebooks/` directory.dd
+This will enter the container and provide a prompt at the `notebooks/` directory.
 ```bash
 ________                               _______________
 ___  __/__________________________________  ____/__  /________      __
