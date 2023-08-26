@@ -43,7 +43,7 @@ This will build and start a container named `picture-locate` and will provide ac
 Training can be run by entering the container and running the `trainModel.py` file as follows:
 
 ```bash
-docker exec -it picture-locate bash
+docker exec -it image-locate bash
 ```
 This will enter the container and provide a prompt at the `notebooks/` directory.dd
 ```bash
