@@ -2,7 +2,7 @@ version: "3.1"
 
 services:
   jupyter:
-    container_name: picture-locate
+    container_name: image-locate
     build: .
     ports:
       - "8888:8888"
