@@ -20,10 +20,10 @@ MARGIN = 0.5
 EPOCHS = 1
 BASE_MODEL = 'vgg16'
 NETVLAD = False
-MODEL_NAME = "vgg16"
+MODEL_NAME = "vgg16-streetview"
 LOAD_WEIGHTS = True
 WEIGHTS_PATH = f"/tf/notebooks/saved_models/{MODEL_NAME}"
-LOSS_TYPE = "soft-margin"
+LOSS_TYPE = "hard-margin"                                               # `hard-margin` or `soft-margin`
 LOSSES_PATH = f"/tf/notebooks/logs/{MODEL_NAME}/"
 LOSSES_FILE = "final"
 
@@ -32,8 +32,8 @@ if SUBSET:
     gnd_images_path = "/tf/CVUSA/gnd_test"
     sat_images_path = "/tf/CVUSA/sat_test_cropped"
 else:
-    gnd_images_path = "/tf/CVUSA/hier_batch/gnd/0"
-    sat_images_path = "/tf/CVUSA/hier_batch/sat/0"
+    gnd_images_path = "/tf/CVUSA/gnd_streetview_train"
+    sat_images_path = "/tf/CVUSA/sat_streetview_train"
 
 
 def print_progress(epoch, step, total_steps, total_time, batch_loss, ave_loss):
@@ -140,7 +140,7 @@ def train(load_from_file: bool = False):
         save_weights(model)
         losses = save_losses(losses)
 
-        test(model=model, model_name=MODEL_NAME, base_model=BASE_MODEL)
+        test(model=model, model_name=MODEL_NAME, base_model=BASE_MODEL, netvlad=NETVLAD)
 
 
 if __name__ == "__main__":
