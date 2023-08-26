@@ -48,8 +48,9 @@ def show_aerial(data):
 
 
 if __name__ == '__main__':
-    with open('/media/leon/SSD_8TB/CVUSA/flickr_images.txt', 'r') as f:
-        flickr_data = [(x.strip(),) + get_metadata(x.strip()) for x in f]
+    with open('streetview_images.txt', 'r') as f:
+        data = [(x.strip(),) + get_metadata(x.strip()) for x in f]
 
-    show_aerial(flickr_data[10])
+
+    show_aerial(data[10])
     plt.show()
