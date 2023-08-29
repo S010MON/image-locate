@@ -17,13 +17,13 @@ print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('
 # --- Set global variables --- #
 BATCH_SIZE = 16
 MARGIN = 0.5
-EPOCHS = 1
+EPOCHS = 5
 BASE_MODEL = 'vgg16'
 NETVLAD = False
 MODEL_NAME = "vgg16-streetview"
 LOAD_WEIGHTS = True
 WEIGHTS_PATH = f"/tf/notebooks/saved_models/{MODEL_NAME}"
-LOSS_TYPE = "hard-margin"                                               # `hard-margin` or `soft-margin`
+LOSS_TYPE = "soft-margin"                                               # `hard-margin` or `soft-margin`
 LOSSES_PATH = f"/tf/notebooks/logs/{MODEL_NAME}/"
 LOSSES_FILE = "final"
 

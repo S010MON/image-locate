@@ -5,6 +5,7 @@ from datetime import timedelta
 from keras.applications.vgg16 import preprocess_input
 from keras.utils import load_img, img_to_array
 
+
 def sample_within_bounds(signal: np.ndarray, x, y, bounds):
     """
     Source: Where am I looking at? Joint Location and Orientation Estimation by Cross-View Matching CVPR2020
